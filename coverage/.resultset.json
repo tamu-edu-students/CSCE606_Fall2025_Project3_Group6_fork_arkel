@@ -8,6 +8,13 @@
         ],
         "branches": {}
       },
+      "/home/saswat/csce606/CSCE606_Fall2025_Project3_Group6/app/helpers/home_helper.rb": {
+        "lines": [
+          1,
+          null
+        ],
+        "branches": {}
+      },
       "/home/saswat/csce606/CSCE606_Fall2025_Project3_Group6/app/models/achievement.rb": {
         "lines": [
           1,
@@ -184,12 +191,21 @@
         ],
         "branches": {}
       },
+      "/home/saswat/csce606/CSCE606_Fall2025_Project3_Group6/app/controllers/home_controller.rb": {
+        "lines": [
+          1,
+          1,
+          null,
+          null
+        ],
+        "branches": {}
+      },
       "/home/saswat/csce606/CSCE606_Fall2025_Project3_Group6/app/controllers/application_controller.rb": {
         "lines": [
-          0,
+          1,
           null,
-          0,
-          0
+          1,
+          null
         ],
         "branches": {}
       },
@@ -215,7 +231,7 @@
         "branches": {}
       }
     },
-    "timestamp": 1763207273
+    "timestamp": 1763515325
   },
   "Cucumber Features": {
     "coverage": {

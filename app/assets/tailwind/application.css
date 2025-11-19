@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+/* Custom Cinematico Theme (Tailwind v4 @theme) */
+@theme {
+  --color-cinematico-black: #0A0A0F;
+  --color-cinematico-gold:  #D4AF37;
+  --color-cinematico-grey:  #6C757D;
+  --color-cinematico-light: #F2F2F2;
+
+  --font-cinzel: "Cinzel", serif;
+  --font-inter: "Inter", sans-serif;
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.15)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)];
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-xl bg-[rgba(10,10,15,0.60)] border border-[rgba(255,255,255,0.1)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.35)];
+  }
+
+  .glass-thin {
+    @apply backdrop-blur-md bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.20)];
+  }
+
+  .feature-card {
+    @apply p-6 rounded-xl transition hover:scale-[1.02]
+           backdrop-blur-xl bg-[rgba(255,255,255,0.07)]
+           border border-[rgba(255,255,255,0.14)]
+           shadow-[0_8px_32px_rgba(0,0,0,0.25)];
+  }
+
+  .step-circle {
+    @apply w-16 h-16 mx-auto rounded-full flex items-center justify-center
+           text-black font-bold text-xl bg-cinematico-gold;
+  }
+}
