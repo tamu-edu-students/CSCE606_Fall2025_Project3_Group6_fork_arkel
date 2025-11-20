@@ -30,14 +30,6 @@ RSpec.describe TmdbService do
       }
     end
 
-    context "with valid query" do
-      it "does not make API call" do
-        service.search_movies("")
-
-        expect(a_request(:get, /#{base_url}/)).not_to have_been_made
-      end
-    end
-
     context "with empty query" do
       it "does not make API call" do
         service.search_movies("")
@@ -75,19 +67,6 @@ RSpec.describe TmdbService do
     end
   end
 
-  describe "#similar_movies" do
-    let(:tmdb_id) { 27205 }
-    let(:response_body) do
-      {
-        "results" => [
-          { "id" => 1, "title" => "Interstellar" },
-          { "id" => 2, "title" => "The Matrix" }
-        ],
-        "total_pages" => 1
-      }
-    end
-
-  end
 
 
   describe ".poster_url" do
