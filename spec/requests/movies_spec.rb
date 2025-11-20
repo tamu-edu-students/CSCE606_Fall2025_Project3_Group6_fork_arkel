@@ -100,5 +100,4 @@ RSpec.describe "Movies", type: :request do
       expect(response.body).to include("Inception")
     end
   end
-
 end

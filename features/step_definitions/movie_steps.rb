@@ -48,14 +48,8 @@ Then("the results should load from cache") do
 end
 
 Given("the TMDb API rate limit is exceeded") do
-  # This would be handled by the service layer in real implementation
-  # For testing, we can stub the API to return 429
-  allow_any_instance_of(TmdbService).to receive(:search_movies).and_return({
-    "error" => "Rate limit exceeded. Please try again later.",
-    "results" => [],
-    "total_pages" => 0,
-    "total_results" => 0
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/search\/movie/)
+    .to_return(status: 429, body: {}.to_json)
 end
 
 Then("I should see cached results") do
@@ -69,8 +63,8 @@ Then("I should see a rate limit message") do
 end
 
 Given("the TMDb API is available") do
-  # Stub successful API responses
-  allow_any_instance_of(TmdbService).to receive(:search_movies).and_return({
+  # Stub successful API responses using WebMock
+  search_response = {
     "results" => [
       {
         "id" => 27205,
@@ -85,9 +79,9 @@ Given("the TMDb API is available") do
     ],
     "total_pages" => 1,
     "total_results" => 1
-  })
+  }
 
-  allow_any_instance_of(TmdbService).to receive(:movie_details).and_return({
+  movie_details_response = {
     "id" => 27205,
     "title" => "Inception",
     "overview" => "A mind-bending thriller",
@@ -104,14 +98,23 @@ Given("the TMDb API is available") do
         { "id" => 2, "name" => "Christopher Nolan", "job" => "Director", "profile_path" => "/director.jpg" }
       ]
     }
-  })
+  }
 
-  allow_any_instance_of(TmdbService).to receive(:genres).and_return({
+  genres_response = {
     "genres" => [
       { "id" => 28, "name" => "Action" },
       { "id" => 878, "name" => "Science Fiction" }
     ]
-  })
+  }
+
+  stub_request(:get, /api\.themoviedb\.org\/3\/search\/movie/)
+    .to_return(status: 200, body: search_response.to_json)
+
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/\d+/)
+    .to_return(status: 200, body: movie_details_response.to_json)
+
+  stub_request(:get, /api\.themoviedb\.org\/3\/genre\/movie\/list/)
+    .to_return(status: 200, body: genres_response.to_json)
 end
 
 When("I click on {string}") do |movie_title|
@@ -144,14 +147,15 @@ Then("I should see the cast information") do
 end
 
 Given("I am viewing a movie with missing poster") do
-  allow_any_instance_of(TmdbService).to receive(:movie_details).and_return({
-    "id" => 27205,
-    "title" => "Inception",
-    "overview" => "A mind-bending thriller",
-    "poster_path" => nil,
-    "release_date" => "2010-07-16",
-    "runtime" => 148
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/27205/)
+    .to_return(status: 200, body: {
+      "id" => 27205,
+      "title" => "Inception",
+      "overview" => "A mind-bending thriller",
+      "poster_path" => nil,
+      "release_date" => "2010-07-16",
+      "runtime" => 148
+    }.to_json)
   visit movie_path(27205)
 end
 
@@ -180,7 +184,8 @@ Then("I should see the movie information") do
 end
 
 Given("the movie with ID {string} does not exist") do |tmdb_id|
-  allow_any_instance_of(TmdbService).to receive(:movie_details).and_return(nil)
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/#{tmdb_id}/)
+    .to_return(status: 404, body: {}.to_json)
 end
 
 Then("I should see an error message") do
@@ -192,14 +197,17 @@ Then("I should see {string}") do |text|
 end
 
 Given("I am viewing the movie details page for {string}") do |movie_title|
-  allow_any_instance_of(TmdbService).to receive(:movie_details).and_return({
-    "id" => 27205,
-    "title" => movie_title,
-    "overview" => "A mind-bending thriller",
-    "poster_path" => "/poster.jpg",
-    "release_date" => "2010-07-16",
-    "runtime" => 148
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/27205/)
+    .to_return(status: 200, body: {
+      "id" => 27205,
+      "title" => movie_title,
+      "overview" => "A mind-bending thriller",
+      "poster_path" => "/poster.jpg",
+      "release_date" => "2010-07-16",
+      "runtime" => 148
+    }.to_json)
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/27205\/similar/)
+    .to_return(status: 200, body: { "results" => [] }.to_json)
   visit movie_path(27205)
 end
 
@@ -217,12 +225,13 @@ Then("I should see at least one similar movie") do
 end
 
 Given("I see similar movies") do
-  allow_any_instance_of(TmdbService).to receive(:similar_movies).and_return({
-    "results" => [
-      { "id" => 1, "title" => "Interstellar", "poster_path" => "/interstellar.jpg" },
-      { "id" => 2, "title" => "The Matrix", "poster_path" => "/matrix.jpg" }
-    ]
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/\d+\/similar/)
+    .to_return(status: 200, body: {
+      "results" => [
+        { "id" => 1, "title" => "Interstellar", "poster_path" => "/interstellar.jpg" },
+        { "id" => 2, "title" => "The Matrix", "poster_path" => "/matrix.jpg" }
+      ]
+    }.to_json)
 end
 
 When("I click on a similar movie") do
@@ -238,10 +247,8 @@ Then("I should see the similar movie's title") do
 end
 
 Given("the TMDb API fails for similar movies") do
-  allow_any_instance_of(TmdbService).to receive(:similar_movies).and_return({
-    "error" => "API request failed",
-    "results" => []
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/movie\/\d+\/similar/)
+    .to_return(status: 500, body: {}.to_json)
 end
 
 Then("I should see an error placeholder") do
@@ -277,6 +284,14 @@ When("I select {string} from the decade filter") do |decade|
 end
 
 Then("only movies from {string} should appear") do |decade|
+  expect(page).to have_css(".grid", wait: 5)
+end
+
+Then("only movies from 2010s should appear") do
+  expect(page).to have_css(".grid", wait: 5)
+end
+
+Then("I should see filtered results") do
   expect(page).to have_css(".grid", wait: 5)
 end
 
@@ -353,11 +368,12 @@ Then("the order should be different from popularity") do
 end
 
 Given("I have no search results") do
-  allow_any_instance_of(TmdbService).to receive(:search_movies).and_return({
-    "results" => [],
-    "total_pages" => 0,
-    "total_results" => 0
-  })
+  stub_request(:get, /api\.themoviedb\.org\/3\/search\/movie/)
+    .to_return(status: 200, body: {
+      "results" => [],
+      "total_pages" => 0,
+      "total_results" => 0
+    }.to_json)
   visit movies_path
   fill_in "query", with: "nonexistentmovie12345"
   click_button "Search"
