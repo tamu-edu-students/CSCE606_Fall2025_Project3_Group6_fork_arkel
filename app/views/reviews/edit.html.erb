@@ -1,0 +1,29 @@
+<div class="min-h-screen pt-20 px-6 pb-12 bg-cinematico-black">
+  <div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+      <%= link_to "← Back to Movie", movie_path(@movie), class: "text-cinematico-gold hover:underline" %>
+    </div>
+
+    <div class="bg-cinematico-dark border border-gray-800 rounded-lg p-8 shadow-xl">
+      <h1 class="font-cinzel text-3xl text-cinematico-gold mb-6">Edit Your Review</h1>
+      <h2 class="text-cinematico-grey mb-8">for <span class="text-white font-bold"><%= @movie.title %></span></h2>
+
+      <%= form_with(model: [@movie, @review], local: true, class: "space-y-6") do |f| %>
+        <div>
+          <%= f.label :rating, "Rating (1-10)", class: "block text-sm font-medium text-cinematico-light mb-2" %>
+          <%= f.number_field :rating, in: 1..10, class: "w-full md:w-32 bg-cinematico-black border border-gray-700 rounded text-white focus:border-cinematico-gold focus:ring-1 focus:ring-cinematico-gold px-4 py-3" %>
+        </div>
+
+        <div>
+          <%= f.label :body, "Your Review", class: "block text-sm font-medium text-cinematico-light mb-2" %>
+          <%= f.text_area :body, rows: 6, class: "w-full bg-cinematico-black border border-gray-700 rounded text-white focus:border-cinematico-gold focus:ring-1 focus:ring-cinematico-gold px-4 py-3" %>
+        </div>
+
+        <div class="flex gap-4 pt-4">
+          <%= f.submit "Update Review", class: "cursor-pointer px-6 py-3 bg-cinematico-gold text-cinematico-black font-bold rounded hover:bg-yellow-500 transition" %>
+          <%= link_to "Cancel", movie_path(@movie), class: "px-6 py-3 border border-gray-700 text-cinematico-grey rounded hover:bg-gray-800 transition text-center" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

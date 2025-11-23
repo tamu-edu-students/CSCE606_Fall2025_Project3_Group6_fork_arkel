@@ -1,7 +1,14 @@
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable, :confirmable
-
+  
+  has_many :reviews, dependent: :destroy
+  has_many :votes, dependent: :destroy
+  has_many :follows, foreign_key: :follower_id, dependent: :destroy
+  has_many :followed_users, through: :follows, source: :followed
+  has_many :following_users, foreign_key: :followed_id, class_name: "Follow", dependent: :destroy
+  has_many :followers, through: :following_users, source: :follower
+  
   validate :password_complexity
 
   validates :username,
@@ -25,5 +32,9 @@ class User < ApplicationRecord
       errors.add :password,
         "must be at least 8 characters long, include at least one uppercase letter, and include at least one number or special character."
     end
+  end
+
+  def admin?
+    id == 1
   end
 end

@@ -1,0 +1,30 @@
+<div class="min-h-screen pt-24 px-6 pb-12 bg-cinematico-black">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="font-cinzel text-4xl text-cinematico-gold">My Reviews</h1>
+      <span class="text-cinematico-grey"><%= @reviews.count %> reviews</span>
+    </div>
+
+    <div class="space-y-8">
+      <% if @reviews.any? %>
+        <% @reviews.each do |review| %>
+          <div class="bg-cinematico-dark border border-gray-800 rounded-lg p-6 shadow-md">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-4">
+              <h2 class="text-xl font-bold text-white hover:text-cinematico-gold transition">
+                <%= link_to review.movie.title, movie_path(review.movie) %>
+              </h2>
+              <span class="text-sm text-cinematico-grey"><%= review.created_at.strftime("%b %d, %Y") %></span>
+            </div>
+            
+            <%= render partial: "reviews/review", locals: { review: review } %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="text-center py-20 bg-cinematico-dark rounded-lg border border-gray-800">
+          <p class="text-cinematico-grey text-lg mb-4">You haven't reviewed any movies yet.</p>
+          <%= link_to "Browse Movies", movies_path, class: "px-6 py-2 bg-cinematico-gold text-cinematico-black font-semibold rounded hover:bg-opacity-90 transition" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

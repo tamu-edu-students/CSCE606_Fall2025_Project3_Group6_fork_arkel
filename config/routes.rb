@@ -10,14 +10,21 @@ Rails.application.routes.draw do
   patch "/settings/profile", to: "users#update"
   get "/u/:username", to: "users#public_profile", as: :public_profile
 
-  # Movies routes
-  resources :movies, only: [ :index, :show ]
-  get "movies/search", to: "movies#search", as: :movies_search
+  get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  resources :movies, only: [ :index, :show ] do
+    resources :reviews, only: [ :create, :edit, :update, :destroy ]
+    collection do
+      get "search"
+    end
+  end
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  resources :reviews, only: [] do
+    member do
+      post :vote
+      post :report
+    end
+  end
+
+  get "my_reviews", to: "reviews#my_reviews", as: :my_reviews
 end
