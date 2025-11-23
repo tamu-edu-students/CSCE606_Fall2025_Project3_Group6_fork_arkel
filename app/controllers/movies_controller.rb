@@ -48,7 +48,7 @@ class MoviesController < ApplicationController
     @movie = Movie.find_by(tmdb_id: params[:id])
 
     # Fetch from TMDb if not cached or cache expired
-    unless @movie&.cached?
+    if @movie.nil? || needs_detail_refresh?(@movie)
       tmdb_data = @tmdb_service.movie_details(params[:id])
       if tmdb_data
         @movie = Movie.find_or_create_from_tmdb(tmdb_data)
@@ -152,6 +152,14 @@ class MoviesController < ApplicationController
     else
       movies
     end
+  end
+
+  def needs_detail_refresh?(movie)
+    return true unless movie.cached?
+    return true if movie.runtime.blank?
+    return true if movie.genres.empty?
+    return true if movie.movie_people.empty?
+    false
   end
 
   def sync_movies_to_db(movies_data)
