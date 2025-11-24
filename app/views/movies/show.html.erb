@@ -7,11 +7,13 @@
         <%= link_to "Back to Search", movies_path, class: "mt-4 inline-block px-6 py-2 bg-cinematico-gold text-cinematico-black font-semibold rounded-lg hover:bg-opacity-90 transition" %>
       </div>
     <% elsif @movie %>
+      <!-- Movie Header -->
       <div class="mb-8">
         <%= link_to "← Back to Search", movies_path, class: "text-cinematico-gold hover:underline mb-4 inline-block" %>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <!-- Poster -->
         <div class="md:col-span-1">
           <% if @movie.poster_path %>
             <%= image_tag @movie.poster_url, 
@@ -25,10 +27,11 @@
           <% end %>
         </div>
 
+        <!-- Movie Info -->
         <div class="md:col-span-2">
           <h1 class="font-cinzel text-4xl text-cinematico-gold mb-4"><%= @movie.title %></h1>
           
-          <div class="flex flex-wrap gap-4 mb-4 text-cinematico-grey">
+          <div class="flex flex-wrap gap-4 mb-4 text-gray-300">
             <% if @movie.release_date %>
               <span><%= @movie.release_date.year %></span>
             <% end %>
@@ -55,6 +58,7 @@
             </div>
           <% end %>
 
+          <!-- Cast -->
           <% if @movie.movie_people.where(role: "cast").any? %>
             <div class="mb-6">
               <h2 class="font-semibold text-xl mb-3">Cast</h2>
@@ -67,9 +71,9 @@
                           class: "w-20 h-20 rounded-full object-cover mb-2",
                           onerror: "this.style.display='none'" %>
                     <% end %>
-                    <p class="text-sm text-cinematico-light"><%= mp.person.name %></p>
+                    <p class="text-sm text-white"><%= mp.person.name %></p>
                     <% if mp.character.present? %>
-                      <p class="text-xs text-cinematico-grey"><%= mp.character %></p>
+                      <p class="text-xs text-gray-300"><%= mp.character %></p>
                     <% end %>
                   </div>
                 <% end %>
@@ -77,41 +81,41 @@
             </div>
           <% end %>
 
+          <!-- Directors -->
           <% directors = @movie.movie_people.where(role: "director") %>
           <% if directors.any? %>
-            <div>
+            <div class="mt-6">
               <h2 class="font-semibold text-xl mb-3">Directors</h2>
               <div class="flex flex-wrap gap-4">
                 <% directors.each do |mp| %>
-                  <span class="text-cinematico-light"><%= mp.person.name %></span>
+                  <span class="text-white"><%= mp.person.name %></span>
                 <% end %>
               </div>
             </div>
           <% end %>
         </div>
       </div>
-
       <div class="mt-12 mb-12 border-t border-gray-800 pt-8">
         <div class="flex flex-col md:flex-row justify-between items-center mb-8">
           <h2 class="font-cinzel text-3xl text-cinematico-gold">Reviews</h2>
           
           <div class="flex gap-4 text-sm mt-4 md:mt-0">
-            <%= link_to "Top Rated", movie_path(@movie, sort: 'top'), class: "px-4 py-2 rounded border #{params[:sort] != 'newest' ? 'border-cinematico-gold text-cinematico-gold bg-cinematico-gold/10' : 'border-gray-700 text-cinematico-grey hover:border-cinematico-gold transition'}" %>
-            <%= link_to "Newest", movie_path(@movie, sort: 'newest'), class: "px-4 py-2 rounded border #{params[:sort] == 'newest' ? 'border-cinematico-gold text-cinematico-gold bg-cinematico-gold/10' : 'border-gray-700 text-cinematico-grey hover:border-cinematico-gold transition'}" %>
+            <%= link_to "Top Rated", movie_path(@movie, sort: 'top'), class: "px-4 py-2 rounded border #{params[:sort] != 'newest' ? 'border-cinematico-gold text-cinematico-gold bg-cinematico-gold/10' : 'border-gray-700 text-gray-200 hover:border-cinematico-gold transition'}" %>
+            <%= link_to "Newest", movie_path(@movie, sort: 'newest'), class: "px-4 py-2 rounded border #{params[:sort] == 'newest' ? 'border-cinematico-gold text-cinematico-gold bg-cinematico-gold/10' : 'border-gray-700 text-gray-200 hover:border-cinematico-gold transition'}" %>
           </div>
         </div>
 
         <% if user_signed_in? %>
           <div class="bg-cinematico-dark border border-gray-800 p-6 rounded-lg mb-10 shadow-lg">
-            <h3 class="text-xl font-cinzel text-cinematico-light mb-4">Leave a Review</h3>
+            <h3 class="text-xl font-cinzel text-white mb-4">Leave a Review</h3>
             <%= form_with(model: [@movie, @review], local: true, class: "space-y-4") do |f| %>
               <div>
-                <%= f.label :rating, "Rating (1-10)", class: "block text-sm font-medium text-cinematico-grey mb-1" %>
+                <%= f.label :rating, "Rating (1-10)", class: "block text-sm font-medium text-gray-200 mb-1" %>
                 <%= f.number_field :rating, in: 1..10, class: "w-full md:w-32 bg-cinematico-black border border-gray-700 rounded text-white focus:border-cinematico-gold focus:ring-1 focus:ring-cinematico-gold px-3 py-2" %>
               </div>
               <div>
-                <%= f.label :body, "Your Thoughts", class: "block text-sm font-medium text-cinematico-grey mb-1" %>
-                <%= f.text_area :body, rows: 3, placeholder: "What did you think of this movie?", class: "w-full bg-cinematico-black border border-gray-700 rounded text-white focus:border-cinematico-gold focus:ring-1 focus:ring-cinematico-gold px-3 py-2" %>
+                <%= f.label :body, "Your Thoughts", class: "block text-sm font-medium text-gray-200 mb-1" %>
+                <%= f.text_area :body, rows: 3, placeholder: "What did you think of this movie?", class: "w-full bg-cinematico-black border border-gray-700 rounded text-white placeholder-gray-400 focus:border-cinematico-gold focus:ring-1 focus:ring-cinematico-gold px-3 py-2" %>
               </div>
               <%= f.submit "Post Review", class: "cursor-pointer px-6 py-2 bg-cinematico-gold text-cinematico-black font-bold rounded hover:bg-yellow-500 transition" %>
             <% end %>
@@ -130,6 +134,8 @@
           <% end %>
         </div>
       </div>
+      
+      <!-- Similar Movies Section -->
       <div class="mt-12">
         <h2 class="font-cinzel text-3xl text-cinematico-gold mb-6">Similar Movies</h2>
         
@@ -144,7 +150,7 @@
         <% else %>
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             <% @similar_movies.each do |movie| %>
-              <div class="group cursor-pointer" onclick="window.location.href='<%= movie_path(movie['id']) %>'">
+              <%= link_to movie_path(movie["id"]), class: "group block focus:outline-none focus-visible:ring-2 focus-visible:ring-cinematico-gold rounded-lg" do %>
                 <div class="relative overflow-hidden rounded-lg bg-cinematico-dark border border-cinematico-grey hover:border-cinematico-gold transition-all duration-300">
                   <% if movie["poster_path"] %>
                     <%= image_tag TmdbService.poster_url(movie["poster_path"]), 
@@ -170,7 +176,7 @@
                     <% end %>
                   </div>
                 </div>
-              </div>
+              <% end %>
             <% end %>
           </div>
         <% end %>

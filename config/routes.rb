@@ -1,8 +1,14 @@
 Rails.application.routes.draw do
   root "home#index"
-  get "home/index"
 
-  devise_for :users
+  devise_for :users,
+    controllers: { registrations: "users/registrations" }
+
+  # User profile
+  get "/profile", to: "users#show"
+  get "/settings/profile", to: "users#edit"
+  patch "/settings/profile", to: "users#update"
+  get "/u/:username", to: "users#public_profile", as: :public_profile
 
   get "up" => "rails/health#show", as: :rails_health_check
 

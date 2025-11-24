@@ -4,22 +4,25 @@ class MoviesController < ApplicationController
   def index
     @query = params[:query]&.strip
     @page = params[:page]&.to_i || 1
-    @genre_filter = params[:genre]&.to_i
-    @decade_filter = params[:decade]&.to_i
+    @genre_filter = params[:genre].presence&.to_i
+    @decade_filter = params[:decade].presence&.to_i
     @sort_by = params[:sort_by] || "popularity"
 
     if @query.present?
       search_results = @tmdb_service.search_movies(@query, page: @page)
 
-      if search_results["error"]
-        @error = search_results["error"]
+      error_message = search_results["error"] || search_results[:error]
+
+      if error_message
+        @error = error_message
         @movies = []
         @total_pages = 0
         @total_results = 0
       else
-        @movies = search_results["results"] || []
-        @total_pages = search_results["total_pages"] || 0
-        @total_results = search_results["total_results"] || 0
+        results = search_results["results"] || search_results[:results] || []
+        @movies = results
+        @total_pages = search_results["total_pages"] || search_results[:total_pages] || 0
+        @total_results = search_results["total_results"] || search_results[:total_results] || 0
 
         # Apply filters
         @movies = apply_filters(@movies)
@@ -45,7 +48,7 @@ class MoviesController < ApplicationController
     @movie = Movie.find_by(tmdb_id: params[:id])
 
     # Fetch from TMDb if not cached or cache expired
-    unless @movie&.cached?
+    if @movie.nil? || needs_detail_refresh?(@movie)
       tmdb_data = @tmdb_service.movie_details(params[:id])
       if tmdb_data
         @movie = Movie.find_or_create_from_tmdb(tmdb_data)
@@ -149,6 +152,12 @@ class MoviesController < ApplicationController
     else
       movies
     end
+  end
+
+  def needs_detail_refresh?(movie)
+    return true unless movie.cached?
+    # Only refresh if the record is skeletal (missing all core detail fields).
+    movie.runtime.blank? && movie.genres.empty? && movie.movie_people.empty?
   end
 
   def sync_movies_to_db(movies_data)
