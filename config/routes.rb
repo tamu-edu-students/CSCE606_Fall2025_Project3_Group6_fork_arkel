@@ -20,6 +20,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :watch_histories, only: [:index, :create, :destroy]
+
   resources :reviews, only: [] do
     member do
       post :vote

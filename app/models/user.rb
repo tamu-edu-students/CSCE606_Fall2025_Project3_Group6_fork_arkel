@@ -10,6 +10,7 @@ class User < ApplicationRecord
   has_many :followers, through: :following_users, source: :follower
 
   has_one :watchlist, dependent: :destroy
+  has_one :watch_history, dependent: :destroy
 
   def admin?
     id == 1

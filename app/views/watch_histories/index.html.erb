@@ -1,0 +1,38 @@
+<div class="min-h-screen pt-24 px-6 pb-12">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="font-cinzel text-3xl text-cinematico-gold mb-6">Your Watch History</h1>
+
+    <% if @watch_logs.present? && @watch_logs.any? %>
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="text-cinematico-grey text-sm border-b border-gray-800">
+            <th class="py-3">Movie</th>
+            <th class="py-3">Watched On</th>
+            <th class="py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @watch_logs.each do |wh| %>
+            <tr class="border-b border-gray-800">
+              <td class="py-3">
+                <% if wh.movie %>
+                  <%= link_to wh.movie.title, movie_path(wh.movie), class: "text-cinematico-light hover:text-cinematico-gold" %>
+                <% else %>
+                  <span class="text-cinematico-grey">Unknown Movie (ID: <%= wh.movie_id %>)</span>
+                <% end %>
+              </td>
+              <td class="py-3 text-cinematico-grey"><%= wh.watched_on %></td>
+              <td class="py-3">
+                <%= button_to "Remove", watch_history_path(wh), method: :delete, class: "px-3 py-1 bg-red-600 rounded text-white text-sm" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <div class="py-12 text-center text-cinematico-grey">
+        <p>No watch history yet. Mark movies as watched on their page.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
