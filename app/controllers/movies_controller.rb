@@ -51,7 +51,9 @@ class MoviesController < ApplicationController
 
     # Get genres for filter dropdown
     genres_data = @tmdb_service.genres
-    @genres = genres_data["genres"] || []
+    # Handle both string and symbol keys, and ensure it's an array
+    @genres = genres_data["genres"] || genres_data[:genres] || []
+    @genres = [] unless @genres.is_a?(Array)
   end
 
   def show

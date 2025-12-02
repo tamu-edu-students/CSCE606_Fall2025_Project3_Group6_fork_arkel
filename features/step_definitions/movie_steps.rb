@@ -100,7 +100,7 @@ end
 Given("the TMDb API is available") do
   # Clear Rails cache to ensure fresh data
   Rails.cache.clear
-  
+
   # Stub successful API responses using WebMock
   search_response = {
     "results" => [
@@ -151,10 +151,15 @@ Given("the TMDb API is available") do
   stub_request(:get, /api\.themoviedb\.org\/3\/movie\/\d+/)
     .to_return(status: 200, body: movie_details_response.to_json)
 
+  # Stub genres API - WebMock matches on the full URL
+  # Try multiple patterns to ensure we catch the request
+  stub_request(:get, %r{https://api\.themoviedb\.org/3/genre/movie/list})
+    .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
+  
   stub_request(:get, /api\.themoviedb\.org\/3\/genre\/movie\/list/)
     .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
-
-  # Also stub for any other genre list requests
+  
+  # Stub exact URL as well
   stub_request(:get, "https://api.themoviedb.org/3/genre/movie/list")
     .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
 end
@@ -358,11 +363,11 @@ end
 When("I select {string} from the genre filter") do |genre|
   # Wait for page to load and genres to be populated
   sleep 1.5
-  
+
   begin
     # Find the select element first
     select_element = find("select[name*='genre']", wait: 10)
-    
+
     # Wait for genres to be loaded - check that we have more than just "All Genres"
     # Retry a few times in case genres are still loading
     5.times do |attempt|
@@ -373,26 +378,26 @@ When("I select {string} from the genre filter") do |genre|
         sleep 0.5
       end
     end
-    
+
     # Get all available options for debugging
     all_options = select_element.all("option", wait: 2).map { |opt| opt.text.strip }
-    
+
     # Try multiple matching strategies
     found_option = nil
-    
+
     # Strategy 1: Exact match
     found_option = select_element.all("option", wait: 2).find { |opt| opt.text.strip == genre }
-    
+
     # Strategy 2: Case insensitive exact match
     if found_option.nil?
       found_option = select_element.all("option", wait: 2).find { |opt| opt.text.strip.downcase == genre.downcase }
     end
-    
+
     # Strategy 3: Partial match (contains)
     if found_option.nil?
       found_option = select_element.all("option", wait: 2).find { |opt| opt.text.strip.downcase.include?(genre.downcase) }
     end
-    
+
     # Strategy 4: Regex match
     if found_option.nil?
       begin
@@ -401,7 +406,7 @@ When("I select {string} from the genre filter") do |genre|
         # Continue to next strategy
       end
     end
-    
+
     if found_option
       found_option.select_option
     else

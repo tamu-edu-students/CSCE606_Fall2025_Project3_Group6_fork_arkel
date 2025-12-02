@@ -121,13 +121,18 @@ class TmdbService
 
       if response.success?
         data = response.body
+        # Ensure data is a hash with genres key
+        data = { "genres" => [] } unless data.is_a?(Hash)
+        data = { "genres" => data } unless data.key?("genres") || data.key?(:genres)
+        # Normalize to string keys
+        data = { "genres" => data["genres"] || data[:genres] || [] }
         Rails.cache.write(cache_key, data, expires_in: 7.days)
         data
       else
-        { genres: [] }
+        { "genres" => [] }
       end
     rescue StandardError => e
-      { genres: [] }
+      { "genres" => [] }
     end
   end
 
