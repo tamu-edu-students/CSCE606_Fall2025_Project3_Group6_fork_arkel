@@ -353,18 +353,27 @@ Given("I see search results") do
 end
 
 When("I select {string} from the genre filter") do |genre|
-  # Wait for page to load
-  sleep 0.5
+  # Wait for page to load and genres to be populated
+  sleep 1
   begin
-    select genre, from: "genre"
+    # Try standard Capybara select
+    select genre, from: "genre", wait: 5
   rescue Capybara::ElementNotFound, Capybara::Ambiguous
     begin
+      # Find the select element
       select_element = find("select[name*='genre']", wait: 5)
-      # Try selecting by text
-      select_element.find("option", text: genre, match: :first).select_option
+      # Try to find option by text (case insensitive)
+      option = select_element.all("option", wait: 2).find { |opt| opt.text.strip == genre || opt.text.strip.downcase == genre.downcase }
+      if option
+        option.select_option
+      else
+        # Fallback: try selecting by partial text match
+        select_element.find("option", text: /#{genre}/i, match: :first).select_option
+      end
     rescue Capybara::ElementNotFound
-      # Try selecting by value (genre ID)
-      select_element.select(genre)
+      # Last resort: select by index if we know the position
+      # This shouldn't happen in normal cases
+      raise "Could not find genre option '#{genre}' in the select dropdown"
     end
   end
 end
