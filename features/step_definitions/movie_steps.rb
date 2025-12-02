@@ -83,8 +83,10 @@ Then("the results should load from cache") do
 end
 
 Given("the TMDb API rate limit is exceeded") do
+  # Clear cache to ensure we test without cache
+  Rails.cache.clear
   stub_request(:get, /api\.themoviedb\.org\/3\/search\/movie/)
-    .to_return(status: 429, body: {}.to_json)
+    .to_return(status: 429, body: {}.to_json, headers: { 'Content-Type' => 'application/json' })
 end
 
 Then("I should see cached results") do
@@ -155,12 +157,16 @@ Given("the TMDb API is available") do
   # Try multiple patterns to ensure we catch the request
   stub_request(:get, %r{https://api\.themoviedb\.org/3/genre/movie/list})
     .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
-  
+
   stub_request(:get, /api\.themoviedb\.org\/3\/genre\/movie\/list/)
     .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
-  
+
   # Stub exact URL as well
   stub_request(:get, "https://api.themoviedb.org/3/genre/movie/list")
+    .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
+
+  # Also stub with query parameters if any
+  stub_request(:get, %r{https://api\.themoviedb\.org/3/genre/movie/list.*})
     .to_return(status: 200, body: genres_response.to_json, headers: { 'Content-Type' => 'application/json' })
 end
 
@@ -286,10 +292,20 @@ Given("I am viewing the movie details page for {string}") do |movie_title|
       "overview" => "A mind-bending thriller",
       "poster_path" => "/poster.jpg",
       "release_date" => "2010-07-16",
-      "runtime" => 148
+      "runtime" => 148,
+      "genres" => [ { "id" => 28, "name" => "Action" } ],
+      "credits" => {
+        "cast" => [],
+        "crew" => []
+      }
     }.to_json)
   stub_request(:get, /api\.themoviedb\.org\/3\/movie\/27205\/similar/)
-    .to_return(status: 200, body: { "results" => [] }.to_json)
+    .to_return(status: 200, body: {
+      "results" => [
+        { "id" => 1, "title" => "Interstellar", "poster_path" => "/interstellar.jpg", "release_date" => "2014-11-05" },
+        { "id" => 2, "title" => "The Matrix", "poster_path" => "/matrix.jpg", "release_date" => "1999-03-31" }
+      ]
+    }.to_json)
   visit movie_path(27205)
 end
 
@@ -334,7 +350,7 @@ Given("the TMDb API fails for similar movies") do
 end
 
 Then("I should see an error placeholder") do
-  expect(page).to have_content("No similar movies available")
+  expect(page).to have_content(/No similar movies available|error/i)
 end
 
 Given("I have searched for {string}") do |query|

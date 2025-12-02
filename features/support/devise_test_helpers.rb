@@ -4,7 +4,7 @@ module DeviseTestHelpers
     # Ensure user has a password
     password = user.password || "password123"
     user.update(password: password) if user.password.blank?
-    
+
     # Visit login page and submit form
     visit new_user_session_path
     begin
