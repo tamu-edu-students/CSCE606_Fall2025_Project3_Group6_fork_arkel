@@ -12,4 +12,3 @@ module DeviseTestHelpers
 end
 
 World(DeviseTestHelpers)
-

@@ -233,7 +233,7 @@ Then("I should see a message about no activity data") do
 end
 
 Then("the corresponding day should be highlighted") do
-  expect(page).to have_css("#heatmap [data-date='#{Date.today.to_s}']")
+  expect(page).to have_css("#heatmap [data-date='#{Date.today}']")
 end
 
 Then("I should be redirected to the login page") do
@@ -248,4 +248,3 @@ Then("I should be redirected to the login page") do
   error_msg = "Expected to be on login page or see login content, but current path is #{current_path} and page content doesn't match"
   expect(result).to be true
 end
-

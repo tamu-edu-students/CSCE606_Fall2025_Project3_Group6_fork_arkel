@@ -227,4 +227,3 @@ RSpec.describe StatsService, type: :service do
     end
   end
 end
-

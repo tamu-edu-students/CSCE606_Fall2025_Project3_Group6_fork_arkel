@@ -23,16 +23,16 @@ RSpec.describe StatsController, type: :controller do
 
     let(:top_contributors) do
       {
-        top_genres: [{ name: "Action", count: 5 }],
-        top_directors: [{ name: "Christopher Nolan", count: 3 }],
-        top_actors: [{ name: "Leonardo DiCaprio", count: 2 }]
+        top_genres: [ { name: "Action", count: 5 } ],
+        top_directors: [ { name: "Christopher Nolan", count: 3 } ],
+        top_actors: [ { name: "Leonardo DiCaprio", count: 2 } ]
       }
     end
 
     let(:trend_data) do
       {
-        activity_trend: [{ month: "2024-01", count: 3 }],
-        rating_trend: [{ month: "2024-01", average_rating: 4.5 }]
+        activity_trend: [ { month: "2024-01", count: 3 } ],
+        rating_trend: [ { month: "2024-01", average_rating: 4.5 } ]
       }
     end
 
@@ -95,4 +95,3 @@ RSpec.describe StatsController, type: :controller do
     end
   end
 end
-

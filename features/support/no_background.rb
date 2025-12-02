@@ -2,4 +2,3 @@
 Before('@no-background') do
   # Skip the background steps for this scenario
 end
-
