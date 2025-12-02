@@ -11,7 +11,11 @@ class MoviesController < ApplicationController
     if @query.present?
       search_results = @tmdb_service.search_movies(@query, page: @page)
 
-      error_message = search_results["error"] || search_results[:error]
+      # Handle both Hash and string keys
+      error_message = nil
+      if search_results.is_a?(Hash)
+        error_message = search_results["error"] || search_results[:error]
+      end
 
       if error_message
         @error = error_message
@@ -19,10 +23,16 @@ class MoviesController < ApplicationController
         @total_pages = 0
         @total_results = 0
       else
-        results = search_results["results"] || search_results[:results] || []
+        results = []
+        if search_results.is_a?(Hash)
+          results = search_results["results"] || search_results[:results] || []
+          @total_pages = search_results["total_pages"] || search_results[:total_pages] || 0
+          @total_results = search_results["total_results"] || search_results[:total_results] || 0
+        else
+          @total_pages = 0
+          @total_results = 0
+        end
         @movies = results
-        @total_pages = search_results["total_pages"] || search_results[:total_pages] || 0
-        @total_results = search_results["total_results"] || search_results[:total_results] || 0
 
         # Apply filters
         @movies = apply_filters(@movies)

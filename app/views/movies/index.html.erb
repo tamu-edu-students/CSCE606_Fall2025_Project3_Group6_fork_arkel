@@ -21,7 +21,7 @@
           <div class="min-w-[200px]">
             <%= f.label :genre, "Filter by genre", class: "block text-cinematico-light mb-1" %>
             <%= f.select :genre, 
-                options_for_select([["All Genres", ""]] + (@genres.map { |g| [g["name"], g["id"]] } || []), @genre_filter),
+                options_for_select([["All Genres", ""]] + ((@genres.is_a?(Array) ? @genres : []).map { |g| g.is_a?(Hash) ? [g["name"] || g[:name], g["id"] || g[:id]] : [g.to_s, g] } || []), @genre_filter),
                 {},
                 { class: "w-full px-4 py-2 bg-cinematico-dark border border-cinematico-grey rounded-lg text-white focus:outline-none focus:border-cinematico-gold" } %>
           </div>
