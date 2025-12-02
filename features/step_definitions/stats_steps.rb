@@ -244,8 +244,8 @@ Then("I should be redirected to the login page") do
   has_login_content = page.has_content?(/Sign In|Log in|Email|Password|sign in/i)
   is_login_path = !current_path.match(/sign_in|login/).nil?
   # If we're still on stats page but see login content, that's also valid
-  # (some implementations show login form on the same page)
-  expect(has_login_content || is_login_path).to be true, 
-    "Expected to be on login page or see login content, but current path is #{current_path} and page content doesn't match"
+  result = has_login_content || is_login_path
+  error_msg = "Expected to be on login page or see login content, but current path is #{current_path} and page content doesn't match"
+  expect(result).to be true
 end
 

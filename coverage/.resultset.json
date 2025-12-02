@@ -2555,6 +2555,24 @@
           }
         }
       },
+      "/Users/felix/Documents/606/project3/CSCE606_Fall2025_Project3_Group6/app/models/genre.rb": {
+        "lines": [
+          1,
+          1,
+          1,
+          null,
+          1,
+          4,
+          null,
+          1,
+          0,
+          0,
+          null,
+          null,
+          null
+        ],
+        "branches": {}
+      },
       "/Users/felix/Documents/606/project3/CSCE606_Fall2025_Project3_Group6/app/models/movie.rb": {
         "lines": [
           1,
@@ -2690,24 +2708,6 @@
           1,
           1,
           1,
-          null
-        ],
-        "branches": {}
-      },
-      "/Users/felix/Documents/606/project3/CSCE606_Fall2025_Project3_Group6/app/models/genre.rb": {
-        "lines": [
-          1,
-          1,
-          1,
-          null,
-          1,
-          4,
-          null,
-          1,
-          0,
-          0,
-          null,
-          null,
           null
         ],
         "branches": {}
@@ -3649,6 +3649,6 @@
         "branches": {}
       }
     },
-    "timestamp": 1764694747
+    "timestamp": 1764694793
   }
 }
