@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_24_003000) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_05_083549) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -164,6 +164,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_24_003000) do
     t.boolean "read"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id", "notifiable_type", "notifiable_id"], name: "index_notifications_on_recipient_and_notifiable"
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
@@ -305,6 +306,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_24_003000) do
   add_foreign_key "movie_people", "movies"
   add_foreign_key "movie_people", "people"
   add_foreign_key "notifications", "users"
+  add_foreign_key "notifications", "users", column: "actor_id"
   add_foreign_key "reviews", "movies"
   add_foreign_key "reviews", "users"
   add_foreign_key "user_achievements", "achievements"

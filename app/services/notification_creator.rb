@@ -1,0 +1,45 @@
+class NotificationCreator
+  # Simple service to create a notification.
+  # Usage:
+  # NotificationCreator.call(actor: current_user, recipient: user, notifiable: review, notification_type: 'review.created', body: '...')
+  def self.call(actor:, recipient:, notifiable: nil, notification_type:, body: nil, data: {})
+    return if recipient.blank?
+
+    attrs = build_attributes(actor, recipient, notifiable, notification_type, body, data)
+    Notification.create!(attrs)
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.warn "Failed to create notification: #{e.record.errors.full_messages.join(', ')}"
+    nil
+  end
+
+  private
+
+  def self.build_attributes(actor, recipient, notifiable, notification_type, body, data)
+    attrs = {}
+
+    # Only set attributes that exist in the schema
+    attrs[:notification_type] = notification_type if Notification.column_names.include?('notification_type')
+    attrs[:body] = body if Notification.column_names.include?('body') && body.present?
+
+    # Use the correct foreign key column name based on schema
+    if Notification.column_names.include?('recipient_id')
+      attrs[:recipient_id] = recipient.id
+    else
+      attrs[:user_id] = recipient.id
+    end
+
+    # Set actor if schema supports it
+    attrs[:actor_id] = actor.id if actor.present? && Notification.column_names.include?('actor_id')
+
+    # Set notifiable if schema supports it
+    if notifiable.present?
+      attrs[:notifiable_type] = notifiable.class.name if Notification.column_names.include?('notifiable_type')
+      attrs[:notifiable_id] = notifiable.id if Notification.column_names.include?('notifiable_id')
+    end
+
+    # Set data if schema supports it
+    attrs[:data] = data if Notification.column_names.include?('data') && data.present?
+
+    attrs
+  end
+end

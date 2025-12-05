@@ -9,6 +9,9 @@
     <div class="flex items-center gap-6">
 
       <% if user_signed_in? %>
+        <div class="mr-2">
+          <%= render 'shared/notifications_dropdown' %>
+        </div>
         <%= link_to "Profile",
           profile_path,
           class: "text-[#F5F5F5] hover:text-white font-medium" %>

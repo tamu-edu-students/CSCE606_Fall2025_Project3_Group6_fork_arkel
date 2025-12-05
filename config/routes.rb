@@ -51,4 +51,14 @@ Rails.application.routes.draw do
 
   # Stats dashboard (From Main Branch)
   get "stats", to: "stats#show", as: :stats
+
+  # Notifications
+  resources :notifications, only: [:index] do
+    collection do
+      post :mark_all_read
+    end
+    member do
+      post :mark_read
+    end
+  end
 end

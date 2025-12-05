@@ -23,6 +23,10 @@ class User < ApplicationRecord
   has_one :watchlist, dependent: :destroy
   has_one :watch_history, dependent: :destroy
 
+  # Notifications
+  # The notifications table historically used `user_id` as the recipient column.
+  has_many :notifications, foreign_key: (Notification.column_names.include?('recipient_id') ? :recipient_id : :user_id), dependent: :destroy
+
   # Stats
   has_one :user_stat, dependent: :destroy
 
