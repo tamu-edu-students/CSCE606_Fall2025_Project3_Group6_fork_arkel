@@ -1,45 +1,44 @@
 <div class="max-w-3xl mx-auto p-6">
-  <h1 class="text-2xl font-semibold mb-4">Notifications</h1>
+  <h1 class="font-cinzel text-4xl text-cinematico-gold mb-6">Notifications</h1>
 
-  <div class="mb-4">
+  <div class="mb-6">
     <%= button_to "Mark all read",
       mark_all_read_notifications_path,
       method: :post,
       remote: true,
-      class: "px-3 py-1 bg-gray-700 text-white rounded" %>
+      class: "px-4 py-2 bg-[#E8C07D] text-black font-semibold hover:bg-white transition" %>
   </div>
 
-  <div class="space-y-2">
+  <div class="space-y-3">
     <% @notifications.each do |n| %>
-      <div class="p-3 rounded-md <%= 'bg-gray-800' if n.unread? %>">
+      <div class="p-4 border border-[#8B7355] <%= n.unread? ? 'bg-[#1A1A1A] border-l-4 border-l-[#E8C07D]' : 'bg-[#0F0F0F]' %>">
         <div class="flex items-start justify-between gap-4">
           <div>
              <div class="text-sm">
-               <strong><%= n.actor&.username || 'System' %></strong>
-               <span class="text-gray-400">• <%= n.notification_type %></span>
+               <strong class="text-[#E8C07D]"><%= n.actor&.username || 'System' %></strong>
              </div>
-            <% if n.respond_to?(:body) && n.body.present? %>
-              <div class="text-sm text-gray-300 mt-1"><%= n.body %></div>
+            <% if n.body.present? %>
+              <div class="text-sm text-[#F5F5F5] mt-2"><%= n.body %></div>
             <% end %>
             <% if n.notifiable %>
-              <div class="text-xs text-gray-500 mt-1">
+              <div class="text-xs text-[#CCCCCC] mt-2">
                 <% if n.notifiable.is_a?(Review) && n.notifiable.movie %>
-                  <%= link_to "View review", movie_path(n.notifiable.movie), class: "underline" %>
+                  <%= link_to "View review", movie_path(n.notifiable.movie), class: "text-[#E8C07D] hover:text-white underline transition" %>
                 <% elsif n.notifiable.is_a?(Movie) %>
-                  <%= link_to "View movie", movie_path(n.notifiable), class: "underline" %>
+                  <%= link_to "View movie", movie_path(n.notifiable), class: "text-[#E8C07D] hover:text-white underline transition" %>
                 <% end %>
               </div>
             <% end %>
           </div>
 
-          <div class="text-xs text-gray-500">
+          <div class="text-xs text-[#CCCCCC]">
             <%= time_ago_in_words(n.created_at) %> ago
             <% unless n.read? %>
               <%= button_to "Mark read",
                 mark_read_notification_path(n),
                 method: :post,
                 remote: true,
-                class: "ml-2 text-sm" %>
+                class: "ml-2 text-sm text-[#E8C07D] hover:text-white transition" %>
             <% end %>
           </div>
         </div>

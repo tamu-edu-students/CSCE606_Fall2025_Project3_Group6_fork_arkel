@@ -10,45 +10,46 @@
     <% end %>
   </button>
 
-  <div data-notifications-target="panel" class="hidden absolute right-0 mt-2 w-80 bg-[#111] border border-gray-800 rounded-md shadow-lg z-50">
-    <div class="p-3">
+<div data-notifications-target="panel" class="hidden absolute right-0 mt-2 w-96 bg-[#0A0A0A] border border-[#8B7355] shadow-lg z-50">
+    <div class="p-4 bg-gradient-to-r from-[#0A0A0A] to-[#1A1A1A]">
       <% if user_signed_in? %>
-        <div class="flex items-center justify-between mb-2">
-          <strong>Notifications</strong>
-          <%= link_to 'View all', notifications_path, class: 'text-sm text-gray-400' %>
+        <div class="flex items-center justify-between mb-3">
+          <strong class="font-cinzel text-2xl text-cinematico-gold font-bold">Notifications</strong>
+          <%= link_to 'View all', notifications_path, class: 'text-sm text-cinematico-gold hover:text-white transition' %>
         </div>
 
         <% recent = current_user.notifications.recent.limit(6) %>
         <% if recent.any? %>
           <ul class="space-y-2">
             <% recent.each do |n| %>
-              <li class="p-2 rounded <%= 'bg-gray-800' if n.unread? %>">
-                <div class="text-sm"><strong><%= n.actor&.username || 'System' %></strong> <span class="text-gray-500">· <%= n.notification_type %></span></div>
-                <% if n.respond_to?(:body) && n.body.present? %>
-                  <div class="text-xs text-gray-300"><%= truncate(n.body, length: 80) %></div>
+              <li class="p-3 <%= n.unread? ? 'bg-[#1A1A1A] border-l-4 border-cinematico-gold' : 'bg-[#0F0F0F]' %>">
+                <% if n.body.present? %>
+                <div class="text-sm text-[#E8C07D]"><strong><%= truncate(n.body, length: 80) %></strong></div>
                 <% end %>
-                <div class="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                <div class="text-xs text-cinematico-light mt-1 flex items-center justify-between">
                   <span><%= time_ago_in_words(n.created_at) %> ago</span>
-                  <% if n.notifiable.is_a?(Review) && n.notifiable.movie %>
-                    <%= link_to "View", movie_path(n.notifiable.movie), class: "text-xs text-gray-400 underline" %>
-                  <% end %>
-                  <% unless n.read? %>
-                    <%= button_to "Mark read",
-                      mark_read_notification_path(n),
-                      method: :post,
-                      remote: true,
-                      form: { 'data-remote': true },
-                      class: "text-xs text-gray-400" %>
-                  <% end %>
+                  <div class="space-x-2">
+                    <% if n.notifiable.is_a?(Review) && n.notifiable.movie %>
+                      <%= link_to "View", movie_path(n.notifiable.movie), class: "text-xs text-cinematico-gold hover:text-white underline transition" %>
+                    <% end %>
+                    <% unless n.read? %>
+                      <%= button_to "Mark read",
+                        mark_read_notification_path(n),
+                        method: :post,
+                        remote: true,
+                        form: { 'data-remote': true },
+                        class: "text-xs text-cinematico-gold hover:text-white transition" %>
+                    <% end %>
+                  </div>
                 </div>
               </li>
             <% end %>
           </ul>
         <% else %>
-          <div class="text-sm text-gray-400">No notifications</div>
+          <div class="text-sm text-cinematico-grey">No notifications</div>
         <% end %>
       <% else %>
-        <div class="p-3 text-sm text-gray-400">Sign in to view notifications</div>
+        <div class="p-3 text-sm text-cinematico-grey">Sign in to view notifications</div>
       <% end %>
     </div>
   </div>

@@ -17,6 +17,12 @@ class FollowsController < ApplicationController
   end
 
   def destroy
+    NotificationCreator.call(
+      actor: current_user,
+      recipient: @user,
+      notification_type: 'user.unfollowed',
+      body: "#{current_user.username} stopped following you"
+    )
     current_user.followed_users.delete(@user)
     redirect_back(fallback_location: user_path(@user))
   end
