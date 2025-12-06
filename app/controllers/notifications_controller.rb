@@ -1,6 +1,6 @@
 class NotificationsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_notification, only: [:mark_read]
+  before_action :set_notification, only: [ :mark_read ]
 
   def index
     @notifications = current_user.notifications.recent
@@ -37,9 +37,9 @@ class NotificationsController < ApplicationController
   def mark_all_read
     relation = current_user.notifications
 
-    if Notification.column_names.include?('read_at')
+    if Notification.column_names.include?("read_at")
       relation.unread.update_all(read_at: Time.current)
-    elsif Notification.column_names.include?('read')
+    elsif Notification.column_names.include?("read")
       relation.unread.update_all(read: true)
     end
 

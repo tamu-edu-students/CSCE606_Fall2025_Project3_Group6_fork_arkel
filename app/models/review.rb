@@ -31,7 +31,7 @@ class Review < ApplicationRecord
         actor: user,
         recipient: follower,
         notifiable: self,
-        notification_type: 'review.created',
+        notification_type: "review.created",
         body: "#{user.username} posted a review for #{movie.title}",
         data: { movie_id: movie.id, review_id: id }
       )

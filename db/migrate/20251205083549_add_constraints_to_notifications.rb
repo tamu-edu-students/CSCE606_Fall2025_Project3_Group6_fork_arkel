@@ -19,15 +19,15 @@ class AddConstraintsToNotifications < ActiveRecord::Migration[7.0]
 
     # Add useful indexes unless they already exist. Only add indexes when the columns exist.
     if column_exists?(:notifications, :recipient_id) && column_exists?(:notifications, :read_at)
-      add_index :notifications, [:recipient_id, :read_at] unless index_exists?(:notifications, [:recipient_id, :read_at])
+      add_index :notifications, [ :recipient_id, :read_at ] unless index_exists?(:notifications, [ :recipient_id, :read_at ])
     elsif column_exists?(:notifications, :user_id) && column_exists?(:notifications, :read_at)
-      add_index :notifications, [:user_id, :read_at] unless index_exists?(:notifications, [:user_id, :read_at])
+      add_index :notifications, [ :user_id, :read_at ] unless index_exists?(:notifications, [ :user_id, :read_at ])
     end
 
     if column_exists?(:notifications, :recipient_id) && column_exists?(:notifications, :notifiable_type) && column_exists?(:notifications, :notifiable_id)
-      add_index :notifications, [:recipient_id, :notifiable_type, :notifiable_id], name: 'index_notifications_on_recipient_and_notifiable' unless index_exists?(:notifications, [:recipient_id, :notifiable_type, :notifiable_id], name: 'index_notifications_on_recipient_and_notifiable')
+      add_index :notifications, [ :recipient_id, :notifiable_type, :notifiable_id ], name: 'index_notifications_on_recipient_and_notifiable' unless index_exists?(:notifications, [ :recipient_id, :notifiable_type, :notifiable_id ], name: 'index_notifications_on_recipient_and_notifiable')
     elsif column_exists?(:notifications, :user_id) && column_exists?(:notifications, :notifiable_type) && column_exists?(:notifications, :notifiable_id)
-      add_index :notifications, [:user_id, :notifiable_type, :notifiable_id], name: 'index_notifications_on_recipient_and_notifiable' unless index_exists?(:notifications, [:user_id, :notifiable_type, :notifiable_id], name: 'index_notifications_on_recipient_and_notifiable')
+      add_index :notifications, [ :user_id, :notifiable_type, :notifiable_id ], name: 'index_notifications_on_recipient_and_notifiable' unless index_exists?(:notifications, [ :user_id, :notifiable_type, :notifiable_id ], name: 'index_notifications_on_recipient_and_notifiable')
     end
   end
 end

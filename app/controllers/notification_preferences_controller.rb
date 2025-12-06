@@ -8,9 +8,9 @@ class NotificationPreferencesController < ApplicationController
 
   def update
     @preference = current_user.notification_preference
-    
+
     if @preference.update(preference_params)
-      redirect_to edit_notification_preferences_path, notice: 'Notification preferences updated successfully.'
+      redirect_to edit_notification_preferences_path, notice: "Notification preferences updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end

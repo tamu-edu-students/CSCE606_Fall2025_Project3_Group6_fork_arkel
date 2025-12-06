@@ -17,12 +17,12 @@ class Vote < ApplicationRecord
   def notify_review_author
     return if review.user == user # Don't notify if user voted on their own review
 
-    vote_type = value == 1 ? 'liked' : 'disliked'
+    vote_type = value == 1 ? "liked" : "disliked"
     NotificationCreator.call(
       actor: user,
       recipient: review.user,
       notifiable: review,
-      notification_type: 'review.voted',
+      notification_type: "review.voted",
       body: "#{user.username} #{vote_type} your review of #{review.movie.title}"
     )
   end

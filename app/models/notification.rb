@@ -1,29 +1,29 @@
 class Notification < ApplicationRecord
   # The DB schema in this app originally used `user_id` for recipient.
   # Support both `user_id` and `recipient_id` for compatibility across environments.
-  belongs_to :recipient, class_name: 'User', foreign_key: (column_names.include?('recipient_id') ? 'recipient_id' : 'user_id')
-  belongs_to :actor, class_name: 'User', optional: true
+  belongs_to :recipient, class_name: "User", foreign_key: (column_names.include?("recipient_id") ? "recipient_id" : "user_id")
+  belongs_to :actor, class_name: "User", optional: true
   belongs_to :notifiable, polymorphic: true, optional: true
 
   validates :notification_type, presence: true
 
   def self.unread
-    if column_names.include?('read_at')
+    if column_names.include?("read_at")
       where(read_at: nil)
-    elsif column_names.include?('read')
-      where(read: [false, nil])
+    elsif column_names.include?("read")
+      where(read: [ false, nil ])
     else
       where(nil)
     end
   end
 
   def self.read
-    if column_names.include?('read_at')
+    if column_names.include?("read_at")
       where.not(read_at: nil)
-    elsif column_names.include?('read')
+    elsif column_names.include?("read")
       where(read: true)
     else
-      where('1 = 0')
+      where("1 = 0")
     end
   end
 
@@ -92,10 +92,10 @@ class Notification < ApplicationRecord
   # Lightweight JSON representation used by controllers
   def as_json(options = {})
     allowed = %w[id actor_id notification_type body created_at]
-    allowed << (column_names.include?('recipient_id') ? 'recipient_id' : 'user_id')
-    allowed << 'data' if column_names.include?('data')
-    allowed << 'read_at' if column_names.include?('read_at')
-    allowed << 'delivered_at' if column_names.include?('delivered_at')
+    allowed << (column_names.include?("recipient_id") ? "recipient_id" : "user_id")
+    allowed << "data" if column_names.include?("data")
+    allowed << "read_at" if column_names.include?("read_at")
+    allowed << "delivered_at" if column_names.include?("delivered_at")
 
     super({ only: allowed.map(&:to_sym) }.merge(options))
   end

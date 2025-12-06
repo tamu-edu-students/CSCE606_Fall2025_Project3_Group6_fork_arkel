@@ -53,7 +53,7 @@ Rails.application.routes.draw do
   get "stats", to: "stats#show", as: :stats
 
   # Notifications
-  resources :notifications, only: [:index] do
+  resources :notifications, only: [ :index ] do
     collection do
       post :mark_all_read
     end
@@ -63,5 +63,5 @@ Rails.application.routes.draw do
   end
 
   # Notification Preferences
-  resource :notification_preferences, only: [:edit, :update]
+  resource :notification_preferences, only: [ :edit, :update ]
 end
