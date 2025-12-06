@@ -11,7 +11,11 @@ class MoviesController < ApplicationController
     if @query.present?
       search_results = @tmdb_service.search_movies(@query, page: @page)
 
-      error_message = search_results["error"] || search_results[:error]
+      # Handle both Hash and string keys
+      error_message = nil
+      if search_results.is_a?(Hash)
+        error_message = search_results["error"] || search_results[:error]
+      end
 
       if error_message
         @error = error_message
@@ -19,10 +23,16 @@ class MoviesController < ApplicationController
         @total_pages = 0
         @total_results = 0
       else
-        results = search_results["results"] || search_results[:results] || []
+        results = []
+        if search_results.is_a?(Hash)
+          results = search_results["results"] || search_results[:results] || []
+          @total_pages = search_results["total_pages"] || search_results[:total_pages] || 0
+          @total_results = search_results["total_results"] || search_results[:total_results] || 0
+        else
+          @total_pages = 0
+          @total_results = 0
+        end
         @movies = results
-        @total_pages = search_results["total_pages"] || search_results[:total_pages] || 0
-        @total_results = search_results["total_results"] || search_results[:total_results] || 0
 
         # Apply filters
         @movies = apply_filters(@movies)
@@ -42,7 +52,9 @@ class MoviesController < ApplicationController
 
     # Get genres for filter dropdown
     genres_data = @tmdb_service.genres
-    @genres = genres_data["genres"] || []
+    # Handle both string and symbol keys, and ensure it's an array
+    @genres = genres_data["genres"] || genres_data[:genres] || []
+    @genres = [] unless @genres.is_a?(Array)
   end
 
   def show
@@ -227,10 +239,14 @@ class MoviesController < ApplicationController
     return unless movie && tmdb_data
 
     # Sync genres
-    if tmdb_data["genres"]
+    if tmdb_data["genres"].is_a?(Array)
       movie.movie_genres.destroy_all
       tmdb_data["genres"].each do |genre_data|
-        genre = Genre.find_or_create_from_tmdb(genre_data["id"], genre_data["name"])
+        genre_id = genre_data.is_a?(Hash) ? (genre_data["id"] || genre_data[:id]) : nil
+        genre_name = genre_data.is_a?(Hash) ? (genre_data["name"] || genre_data[:name]) : nil
+        next unless genre_id && genre_name
+
+        genre = Genre.find_or_create_from_tmdb(genre_id, genre_name)
         MovieGenre.find_or_create_by(movie: movie, genre: genre)
       end
     end
