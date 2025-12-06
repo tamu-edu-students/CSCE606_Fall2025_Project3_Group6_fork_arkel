@@ -22,6 +22,9 @@ class NotificationCreator
 
     attrs = build_attributes(actor, recipient, notifiable, notification_type, body, data)
     Notification.create!(attrs)
+    
+    # Send email notification if body is present
+    NotificationMailer.send_notification(recipient, body).deliver_later if body.present?
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.warn "Failed to create notification: #{e.record.errors.full_messages.join(', ')}"
     nil
