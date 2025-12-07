@@ -5,7 +5,7 @@ FactoryBot.define do
     overview { "MyText" }
     poster_path { "MyString" }
     release_date { Date.new(2000, 1, 1) }
-    runtime { 1 }
+    runtime { 120 }
     popularity { 1.5 }
     cached_at { Time.current }
   end

@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :watch_log do
-    association :watch_history
     association :movie
+    association :watch_history
     watched_on { Date.current }
   end
 end

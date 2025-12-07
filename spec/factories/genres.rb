@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :genre do
+    sequence(:tmdb_id) { |n| 28 + n }
     name { "Action" }
-    tmdb_id { 28 }
   end
 end
