@@ -1,8 +1,8 @@
 FactoryBot.define do
   factory :list do
-    user { nil }
-    name { "MyString" }
-    description { "MyText" }
+    association :user
+    name { Faker::Movie.title }
+    description { Faker::Lorem.paragraph }
     public { false }
   end
 end
