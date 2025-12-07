@@ -1,9 +1,10 @@
 <%= link_to movie_path(movie["id"]), class: "group block focus:outline-none focus-visible:ring-2 focus-visible:ring-cinematico-gold rounded-lg" do %>
   <div class="relative overflow-hidden rounded-lg bg-cinematico-dark/80 border border-white/10 hover:border-cinematico-gold transition-all duration-300 backdrop-blur">
-    <% card_poster_url = movie["poster_path"].present? ? TmdbService.poster_url(movie["poster_path"]) : poster_placeholder_url %>
+    <% card_poster_url = poster_url_for(movie["poster_path"]) %>
+    <% card_is_placeholder = poster_is_placeholder?(card_poster_url) %>
     <%= image_tag card_poster_url,
-        alt: movie["poster_path"].present? ? movie["title"] : "No Poster Available",
-        class: "w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300 poster-placeholder" %>
+        alt: card_is_placeholder ? "No Poster Available" : movie["title"],
+        class: "w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300 #{'poster-placeholder' if card_is_placeholder}" %>
 
     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-cinematico-black to-transparent p-4">
       <h3 class="font-semibold text-cinematico-light text-sm mb-1 line-clamp-2"><%= movie["title"] %></h3>

@@ -38,11 +38,11 @@
         <div class="group relative">
           <%= link_to movie_path(movie) do %>
             <div class="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden mb-2">
-              <% if movie.poster_path %>
-                <%= image_tag movie.poster_url, class: "w-full h-full object-cover group-hover:scale-105 transition duration-300" %>
-              <% else %>
-                <div class="w-full h-full flex items-center justify-center text-gray-500">No Poster</div>
-              <% end %>
+              <% poster_url = movie.poster_url %>
+              <% is_placeholder = poster_is_placeholder?(poster_url) %>
+              <%= image_tag poster_url, 
+                  alt: is_placeholder ? "No Poster Available" : movie.title,
+                  class: "w-full h-full object-cover group-hover:scale-105 transition duration-300 #{'poster-placeholder' if is_placeholder}" %>
             </div>
             <h3 class="text-white font-medium truncate group-hover:text-cinematico-gold"><%= movie.title %></h3>
           <% end %>

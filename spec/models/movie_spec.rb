@@ -85,8 +85,13 @@ RSpec.describe Movie, type: :model do
     context "without poster_path" do
       let(:movie) { create(:movie, poster_path: nil) }
 
-      it "returns nil" do
-        expect(movie.poster_url).to be_nil
+      it "returns placeholder URL" do
+        # poster_url should always return a valid URL, falling back to placeholder
+        expect(movie.poster_url).not_to be_nil
+        expect(movie.poster_url).to include("data:image/svg+xml")
+        # URL is encoded, so check for encoded version or decode it
+        decoded_url = URI.decode_www_form_component(movie.poster_url)
+        expect(decoded_url).to include("No Poster Available")
       end
     end
   end

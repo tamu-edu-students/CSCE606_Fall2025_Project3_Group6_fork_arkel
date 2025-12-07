@@ -44,8 +44,12 @@
           <% @watch_logs.each do |wh| %>
             <tr class="border-b border-gray-800">
               <td class="py-3">
-                <% if wh.movie&.poster_path.present? %>
-                  <%= image_tag wh.movie.poster_url, alt: wh.movie.title, class: "w-16 h-24 rounded object-cover border border-gray-800" %>
+                <% if wh.movie %>
+                  <% poster_url = wh.movie.poster_url %>
+                  <% is_placeholder = poster_is_placeholder?(poster_url) %>
+                  <%= image_tag poster_url, 
+                      alt: is_placeholder ? "No Poster Available" : wh.movie.title,
+                      class: "w-16 h-24 rounded object-cover border border-gray-800 #{'poster-placeholder' if is_placeholder}" %>
                 <% else %>
                   <div class="w-16 h-24 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">N/A</div>
                 <% end %>

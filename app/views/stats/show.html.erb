@@ -99,11 +99,11 @@
               <div class="space-y-3">
                 <% @most_watched.each do |entry| %>
                   <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3">
-                    <% if entry[:movie].poster_path.present? %>
-                      <%= image_tag entry[:movie].poster_url, alt: entry[:movie].title, class: "w-12 h-16 rounded object-cover border border-gray-800" %>
-                    <% else %>
-                      <div class="w-12 h-16 bg-gray-800 rounded flex items-center justify-center text-sm text-gray-500">N/A</div>
-                    <% end %>
+                    <% poster_url = entry[:movie].poster_url %>
+                    <% is_placeholder = poster_is_placeholder?(poster_url) %>
+                    <%= image_tag poster_url, 
+                        alt: is_placeholder ? "No Poster Available" : entry[:movie].title,
+                        class: "w-12 h-16 rounded object-cover border border-gray-800 #{'poster-placeholder' if is_placeholder}" %>
                     <div class="flex-1">
                       <p class="text-white font-semibold text-sm"><%= entry[:movie].title %></p>
                       <p class="text-gray-400 text-sm">Total watches: <%= entry[:watch_count] %></p>
@@ -167,11 +167,11 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[#E8C07D] font-bold w-5 text-right"><%= index + 1 %>.</span>
                   <div class="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    <% if director[:profile_path].present? %>
-                      <%= image_tag TmdbService.poster_url(director[:profile_path]), alt: director[:name], class: "w-full h-full object-cover" %>
-                    <% else %>
-                      <span class="text-sm text-gray-400">N/A</span>
-                    <% end %>
+                    <% director_profile_url = poster_url_for(director[:profile_path]) %>
+                    <% director_is_placeholder = poster_is_placeholder?(director_profile_url) %>
+                    <%= image_tag director_profile_url, 
+                        alt: director_is_placeholder ? "No Profile Available" : director[:name],
+                        class: "w-full h-full object-cover #{'poster-placeholder' if director_is_placeholder}" %>
                   </div>
                   <span class="text-white text-sm truncate"><%= director[:name] %></span>
                 </div>
@@ -194,11 +194,11 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[#E8C07D] font-bold w-5 text-right"><%= index + 1 %>.</span>
                   <div class="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    <% if actor[:profile_path].present? %>
-                      <%= image_tag TmdbService.poster_url(actor[:profile_path]), alt: actor[:name], class: "w-full h-full object-cover" %>
-                    <% else %>
-                      <span class="text-sm text-gray-400">N/A</span>
-                    <% end %>
+                    <% actor_profile_url = poster_url_for(actor[:profile_path]) %>
+                    <% actor_is_placeholder = poster_is_placeholder?(actor_profile_url) %>
+                    <%= image_tag actor_profile_url, 
+                        alt: actor_is_placeholder ? "No Profile Available" : actor[:name],
+                        class: "w-full h-full object-cover #{'poster-placeholder' if actor_is_placeholder}" %>
                   </div>
                   <span class="text-white text-sm truncate"><%= actor[:name] %></span>
                 </div>

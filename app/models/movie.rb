@@ -33,9 +33,14 @@ class Movie < ApplicationRecord
     movie
   end
 
+  # Always returns a valid URL - falls back to placeholder if poster_path is blank
+  # This ensures consistent behavior across all environments (dev, test, CI, production)
   def poster_url
-    return nil if poster_path.blank?
-    TmdbService.poster_url(poster_path)
+    if poster_path.blank?
+      ApplicationController.helpers.poster_placeholder_url
+    else
+      TmdbService.poster_url(poster_path)
+    end
   end
 
   def release_year

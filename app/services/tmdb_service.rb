@@ -196,6 +196,9 @@ class TmdbService
     end
   end
 
+  # Returns TMDb poster URL if poster_path is present, nil otherwise
+  # Note: This method returns nil for blank values - callers should use helper methods
+  # that provide fallback to placeholder (e.g., Movie#poster_url or ApplicationHelper#poster_url_for)
   def self.poster_url(poster_path)
     return nil if poster_path.blank?
     "#{IMAGE_BASE_URL}#{poster_path}"

@@ -118,11 +118,11 @@
             <div class="space-y-4">
               <% @trending_movies.each do |movie| %>
                 <%= link_to movie_path(movie), class: "flex gap-4 group p-3 rounded-lg border border-white/5 hover:border-cinematico-gold/40 transition bg-white/5" do %>
-                  <% if movie.poster_path %>
-                    <%= image_tag movie.poster_url, alt: "#{movie.title} poster", class: "w-14 h-20 object-cover rounded shadow-md" %>
-                  <% else %>
-                    <div class="w-14 h-20 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">No Poster</div>
-                  <% end %>
+                  <% poster_url = movie.poster_url %>
+                  <% is_placeholder = poster_is_placeholder?(poster_url) %>
+                  <%= image_tag poster_url, 
+                      alt: is_placeholder ? "No Poster Available" : "#{movie.title} poster",
+                      class: "w-14 h-20 object-cover rounded shadow-md #{'poster-placeholder' if is_placeholder}" %>
                   <div class="flex flex-col justify-center">
                     <h4 class="text-gray-200 font-bold group-hover:text-cinematico-gold transition line-clamp-2"><%= movie.title %></h4>
                     <p class="text-xs text-gray-500 mt-1"><%= format_date(movie.release_date) %></p>
@@ -184,11 +184,11 @@
               <% @trending_movies.each do |movie| %>
                 <%= link_to movie_path(movie), class: "group block" do %>
                   <div class="aspect-poster rounded-xl overflow-hidden bg-gray-800 card-deep-shadow relative">
-                    <% if movie.poster_path %>
-                      <%= image_tag movie.poster_url, alt: "#{movie.title} poster", class: "w-full h-full object-cover group-hover:scale-105 transition duration-500" %>
-                    <% else %>
-                      <div class="w-full h-full flex items-center justify-center text-gray-500">No Poster</div>
-                    <% end %>
+                    <% poster_url = movie.poster_url %>
+                    <% is_placeholder = poster_is_placeholder?(poster_url) %>
+                    <%= image_tag poster_url, 
+                        alt: is_placeholder ? "No Poster Available" : "#{movie.title} poster",
+                        class: "w-full h-full object-cover group-hover:scale-105 transition duration-500 #{'poster-placeholder' if is_placeholder}" %>
                   <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
                 </div>
                 <p class="mt-3 text-sm font-medium text-cinematico-light group-hover:text-cinematico-gold transition line-clamp-2"><%= movie.title %></p>

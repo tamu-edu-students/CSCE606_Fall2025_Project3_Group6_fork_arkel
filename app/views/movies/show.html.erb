@@ -13,12 +13,12 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div class="md:col-span-1">
-          <% poster_url = @movie.poster_url || poster_placeholder_url %>
-          <% is_placeholder = @movie.poster_url.blank? %>
+          <% poster_url = @movie.poster_url %>
+          <% is_placeholder = poster_is_placeholder?(poster_url) %>
           <div class="relative">
             <%= image_tag poster_url, 
                 alt: is_placeholder ? "No Poster Available" : @movie.title,
-                class: "w-full rounded-lg shadow-lg poster-placeholder",
+                class: "w-full rounded-lg shadow-lg #{'poster-placeholder' if is_placeholder}",
                 title: is_placeholder ? "No Poster Available" : @movie.title %>
             <% if is_placeholder %>
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -197,10 +197,11 @@
               <div class="group relative">
                 <%= link_to movie_path(movie['id']), class: 'group block focus:outline-none focus-visible:ring-2 focus-visible:ring-cinematico-gold rounded-lg' do %>
                   <div class="relative overflow-hidden rounded-lg bg-cinematico-dark border border-cinematico-grey hover:border-cinematico-gold transition-all duration-300">
-                    <% similar_poster_url = movie['poster_path'].present? ? TmdbService.poster_url(movie['poster_path']) : poster_placeholder_url %>
+                    <% similar_poster_url = poster_url_for(movie['poster_path']) %>
+                    <% similar_is_placeholder = poster_is_placeholder?(similar_poster_url) %>
                     <%= image_tag similar_poster_url, 
-                        alt: movie['poster_path'].present? ? movie['title'] : "No Poster Available",
-                        class: 'w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300 poster-placeholder' %>
+                        alt: similar_is_placeholder ? "No Poster Available" : movie['title'],
+                        class: "w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300 #{'poster-placeholder' if similar_is_placeholder}" %>
                     
                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-cinematico-black to-transparent p-3">
                       <h3 class="font-semibold text-white text-sm mb-1 line-clamp-2"><%= movie['title'] %></h3>

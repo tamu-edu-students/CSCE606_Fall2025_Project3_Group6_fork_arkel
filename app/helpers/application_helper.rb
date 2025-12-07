@@ -24,4 +24,19 @@ module ApplicationHelper
     svg_content = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450"><rect fill="#333" width="300" height="450"/><text fill="#999" font-family="Arial" font-size="18" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">No Poster Available</text></svg>'
     "data:image/svg+xml;charset=utf-8,#{ERB::Util.url_encode(svg_content)}"
   end
+
+  # Unified helper for poster URLs from hash data (e.g., from TMDb API responses)
+  # Always returns a valid URL - falls back to placeholder if poster_path is blank
+  def poster_url_for(poster_path)
+    if poster_path.blank?
+      poster_placeholder_url
+    else
+      TmdbService.poster_url(poster_path)
+    end
+  end
+
+  # Determines if a poster URL is a placeholder
+  def poster_is_placeholder?(poster_url)
+    poster_url == poster_placeholder_url
+  end
 end
