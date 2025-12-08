@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :movie_genre do
-    movie { nil }
-    genre { nil }
+    association :movie
+    association :genre
   end
 end

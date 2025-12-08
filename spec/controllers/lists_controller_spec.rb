@@ -147,7 +147,7 @@ RSpec.describe ListsController, type: :controller do
 
       it 'returns unprocessable entity status' do
         post :create, params: invalid_params
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
@@ -280,6 +280,13 @@ RSpec.describe ListsController, type: :controller do
         delete :destroy, params: { id: list.id }
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to eq("Not authorized.")
+      end
+
+      it 'does not destroy the list' do
+        list_to_keep = create(:list, user: user)
+        expect {
+          delete :destroy, params: { id: list_to_keep.id }
+        }.not_to change(List, :count)
       end
     end
   end

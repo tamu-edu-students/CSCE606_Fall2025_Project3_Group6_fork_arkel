@@ -1,10 +1,11 @@
 FactoryBot.define do
   factory :notification do
-    user { nil }
-    actor_id { 1 }
-    notification_type { "MyString" }
-    notifiable_type { "MyString" }
+    association :recipient, factory: :user
+    association :actor, factory: :user
+    notification_type { "notification.test" }
+    notifiable_type { "Review" }
     notifiable_id { 1 }
     read { false }
+    body { "Test notification" }
   end
 end

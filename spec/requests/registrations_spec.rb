@@ -55,7 +55,7 @@ RSpec.describe "Registrations", type: :request do
 
     it "renders errors with invalid params" do
       post user_registration_path, params: { user: { email: "bad", password: "x", password_confirmation: "y" } }
-      expect(response).to have_http_status(:unprocessable_entity).or have_http_status(:success)
+      expect(response).to have_http_status(:unprocessable_content).or have_http_status(:success)
     end
   end
 
@@ -74,7 +74,7 @@ RSpec.describe "Registrations", type: :request do
       login_as(user, scope: :user)
 
       patch user_registration_path, params: { user: { username: "newname", current_password: "wrong" } }
-      expect(response).to have_http_status(:unprocessable_entity).or have_http_status(:success)
+      expect(response).to have_http_status(:unprocessable_content).or have_http_status(:success)
       expect(user.reload.username).not_to eq("newname")
     end
   end

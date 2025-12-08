@@ -92,10 +92,11 @@ class Notification < ApplicationRecord
   # Lightweight JSON representation used by controllers
   def as_json(options = {})
     allowed = %w[id actor_id notification_type body created_at]
-    allowed << (column_names.include?("recipient_id") ? "recipient_id" : "user_id")
-    allowed << "data" if column_names.include?("data")
-    allowed << "read_at" if column_names.include?("read_at")
-    allowed << "delivered_at" if column_names.include?("delivered_at")
+    column_list = self.class.column_names
+    allowed << (column_list.include?("recipient_id") ? "recipient_id" : "user_id")
+    allowed << "data" if column_list.include?("data")
+    allowed << "read_at" if column_list.include?("read_at")
+    allowed << "delivered_at" if column_list.include?("delivered_at")
 
     super({ only: allowed.map(&:to_sym) }.merge(options))
   end

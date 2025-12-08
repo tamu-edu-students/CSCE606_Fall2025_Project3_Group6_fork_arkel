@@ -1,177 +1,266 @@
-require 'rails_helper'
-
-RSpec.describe TmdbService, type: :service do
-  let(:token) { "test-token" }
-
-  before do
-    @orig = ENV['TMDB_ACCESS_TOKEN']
-    ENV['TMDB_ACCESS_TOKEN'] = token
-    Rails.cache.clear
-  end
-
-  after do
-    ENV['TMDB_ACCESS_TOKEN'] = @orig
-    Rails.cache.clear
-  end
-
-  describe '.poster_url' do
-    it 'returns full url for poster path' do
-      expect(TmdbService.poster_url('/abc.jpg')).to include('image.tmdb.org')
-    end
-
-    it 'returns nil for blank poster_path' do
-      expect(TmdbService.poster_url(nil)).to be_nil
-    end
-  end
-
-  describe '#search_movies' do
-    it 'returns empty results for blank query' do
-      svc = TmdbService.new
-      expect(svc.search_movies('')).to eq({ results: [], total_pages: 0, total_results: 0 })
-    end
-
-    it 'parses successful API response' do
-      body = { "results" => [ { "id" => 1, "title" => "Foo" } ], "total_pages" => 1, "total_results" => 1 }
-      stub_request(:get, "https://api.themoviedb.org/3/search/movie").with(query: hash_including({ "query"=>"Foo", "page"=>"1" })).to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
-
-      svc = TmdbService.new
-      res = svc.search_movies('Foo', page: 1)
-      expect(res['results'].first['title']).to eq('Foo')
-    end
-
-    it 'handles rate limit 429' do
-      stub_request(:get, "https://api.themoviedb.org/3/search/movie").with(query: hash_including({ "query"=>"X", "page"=>"1" })).to_return(status: 429, body: "")
-      svc = TmdbService.new
-      res = svc.search_movies('X', page: 1)
-      expect(res[:error] || res['error']).to be_present
-    end
-  end
-
-  describe '#movie_details' do
-    it 'returns nil for blank id' do
-      svc = TmdbService.new
-      expect(svc.movie_details(nil)).to be_nil
-    end
-
-    it 'fetches and returns movie details' do
-      tmdb_id = 123
-      body = { "id" => tmdb_id, "title" => "Movie 123" }
-      stub_request(:get, "https://api.themoviedb.org/3/movie/#{tmdb_id}").with(query: hash_including({ "append_to_response"=>"credits,videos" })).to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
-
-      svc = TmdbService.new
-      res = svc.movie_details(tmdb_id)
-      expect(res['title']).to eq('Movie 123')
-    end
-  end
-
-  describe '#similar_movies' do
-    it 'returns empty for blank id' do
-      svc = TmdbService.new
-      expect(svc.similar_movies(nil)).to eq({ results: [], total_pages: 0 })
-    end
-
-    it 'fetches similar movies' do
-      tmdb_id = 1
-      body = { "results" => [ { "id" => 2, "title" => "Bar" } ], "total_pages" => 1 }
-      stub_request(:get, "https://api.themoviedb.org/3/movie/#{tmdb_id}/similar").with(query: hash_including({ "page"=>"1" })).to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
-
-      svc = TmdbService.new
-      res = svc.similar_movies(tmdb_id, page: 1)
-      expect(res['results'].first['title']).to eq('Bar')
-    end
-  end
-
-  describe '#genres' do
-    it 'fetches genres list' do
-      body = { "genres" => [ { "id" => 1, "name" => "Action" } ] }
-      stub_request(:get, "https://api.themoviedb.org/3/genre/movie/list").to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
-
-      svc = TmdbService.new
-      res = svc.genres
-      expect(res['genres'].first['name']).to eq('Action')
-    end
-  end
-end
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe TmdbService do
-  let(:service) { described_class.new }
-  let(:access_token) { "test_access_token" }
-  let(:base_url) { "https://api.themoviedb.org/3" }
+  let(:access_token) { "token" }
+  let(:service) do
+    allow(ENV).to receive(:fetch).with("TMDB_ACCESS_TOKEN", "").and_return(access_token)
+    described_class.new
+  end
+
+  let(:success_response) do
+    instance_double(Faraday::Response, success?: true, status: 200, body: { "results" => [ { "title" => "Movie" } ], "total_pages" => 1, "total_results" => 1 })
+  end
+
+  let(:rate_limited_response) do
+    instance_double(Faraday::Response, success?: false, status: 429, body: {})
+  end
+  let(:failure_response) do
+    instance_double(Faraday::Response, success?: false, status: 500, body: {})
+  end
 
   before do
-    allow(ENV).to receive(:fetch).with("TMDB_ACCESS_TOKEN", "").and_return(access_token)
     Rails.cache.clear
   end
 
   describe "#search_movies" do
-    let(:query) { "Inception" }
-    let(:response_body) do
-      {
-        "results" => [
-          {
-            "id" => 27205,
-            "title" => "Inception",
-            "overview" => "A mind-bending thriller",
-            "poster_path" => "/poster.jpg",
-            "release_date" => "2010-07-16",
-            "popularity" => 50.5,
-            "vote_average" => 8.8
-          }
-        ],
-        "total_pages" => 1,
-        "total_results" => 1
-      }
+    it "returns cached results when present" do
+      Rails.cache.write("tmdb_search_query_page_1", { cached: true })
+
+      result = service.search_movies("query", page: 1)
+
+      expect(result).to eq({ cached: true })
     end
 
-    context "with empty query" do
-      it "does not make API call" do
-        service.search_movies("")
+    it "returns empty results when query is blank" do
+      expect(service.search_movies("")).to eq(results: [], total_pages: 0, total_results: 0)
+    end
 
-        expect(a_request(:get, /#{base_url}/)).not_to have_been_made
-      end
+    it "stores successful responses in cache" do
+      allow(service).to receive(:authorized_get).and_return(success_response)
+
+      result = service.search_movies("Query", page: 1)
+
+      expect(result["results"].first["title"]).to eq("Movie")
+      expect(Rails.cache.read("tmdb_search_query_page_1")).to eq(success_response.body)
+    end
+
+    it "returns rate limit error when 429 and no cache" do
+      allow(service).to receive(:authorized_get).and_return(rate_limited_response)
+
+      result = service.search_movies("Query", page: 1)
+
+      expect(result[:error]).to match(/Rate limit/)
+    end
+
+    it "returns connection error when Faraday raises" do
+      allow(service).to receive(:authorized_get).and_raise(Faraday::TimeoutError)
+      result = service.search_movies("Query", page: 1)
+      expect(result[:error]).to include("Connection error")
+    end
+
+    it "rescues generic errors" do
+      allow(service).to receive(:authorized_get).and_raise(StandardError.new("boom"))
+      result = service.search_movies("Query", page: 1)
+      expect(result[:error]).to eq("An error occurred")
+    end
+
+    it "returns API request failed when response not successful" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      result = service.search_movies("Query", page: 1)
+      expect(result[:error]).to eq("API request failed")
     end
   end
 
   describe "#movie_details" do
-    let(:tmdb_id) { 27205 }
-    let(:response_body) do
-      {
-        "id" => tmdb_id,
-        "title" => "Inception",
-        "overview" => "A mind-bending thriller",
-        "poster_path" => "/poster.jpg",
-        "release_date" => "2010-07-16",
-        "runtime" => 148,
-        "popularity" => 50.5,
-        "genres" => [ { "id" => 28, "name" => "Action" } ],
-        "credits" => {
-          "cast" => [ { "id" => 1, "name" => "Leonardo DiCaprio", "character" => "Cobb" } ],
-          "crew" => [ { "id" => 2, "name" => "Christopher Nolan", "job" => "Director" } ]
-        }
-      }
+    it "returns nil for blank id" do
+      expect(service.movie_details(nil)).to be_nil
     end
 
-    context "with blank tmdb_id" do
-      it "returns nil" do
-        result = service.movie_details("")
+    it "returns cached data when present" do
+      Rails.cache.write("tmdb_movie_1", { "id" => 1 })
+      expect(service.movie_details(1)).to eq({ "id" => 1 })
+    end
 
-        expect(result).to be_nil
-      end
+    it "fetches and caches data on success" do
+      allow(service).to receive(:authorized_get).and_return(success_response)
+
+      expect(service.movie_details(2)).to eq(success_response.body)
+      expect(Rails.cache.read("tmdb_movie_2")).to eq(success_response.body)
+    end
+
+    it "returns nil on failure" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.movie_details(3)).to be_nil
+    end
+
+    it "rescues exceptions and returns nil" do
+      allow(service).to receive(:authorized_get).and_raise(StandardError.new("boom"))
+      expect(service.movie_details(4)).to be_nil
     end
   end
 
-
-
-  describe ".poster_url" do
-    it "returns full poster URL" do
-      url = described_class.poster_url("/poster.jpg")
-      expect(url).to eq("https://image.tmdb.org/t/p/w500/poster.jpg")
+  describe "#similar_movies" do
+    it "returns empty results when id is blank" do
+      expect(service.similar_movies(nil)).to eq(results: [], total_pages: 0)
     end
 
-    it "returns nil for blank poster_path" do
-      url = described_class.poster_url("")
-      expect(url).to be_nil
+    it "returns cached data when present" do
+      Rails.cache.write("tmdb_similar_5_page_1", { "results" => [] })
+      expect(service.similar_movies(5)).to eq({ "results" => [] })
+    end
+
+    it "fetches and caches on success" do
+      allow(service).to receive(:authorized_get).and_return(success_response)
+
+      expect(service.similar_movies(5)).to eq(success_response.body)
+      expect(Rails.cache.read("tmdb_similar_5_page_1")).to eq(success_response.body)
+    end
+
+    it "returns error hash on failure" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.similar_movies(5)).to include(:error)
+    end
+
+    it "rescues standard errors" do
+      allow(service).to receive(:authorized_get).and_raise(StandardError.new("boom"))
+      expect(service.similar_movies(5)).to include(:error)
+    end
+  end
+
+  describe "#trending_movies" do
+    it "returns cached data when rate limited" do
+      Rails.cache.write("tmdb_trending_week_page_1", { cached: true })
+      allow(service).to receive(:authorized_get).and_return(rate_limited_response)
+
+      expect(service.trending_movies).to eq({ cached: true })
+    end
+
+    it "fetches and caches on success" do
+      allow(service).to receive(:authorized_get).and_return(success_response)
+
+      expect(service.trending_movies(time_window: "day", page: 1)).to eq(success_response.body)
+      expect(Rails.cache.read("tmdb_trending_day_page_1")).to eq(success_response.body)
+    end
+
+    it "returns fallback on failure" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.trending_movies).to include(:error)
+    end
+
+    it "returns fallback when access token missing" do
+      allow(ENV).to receive(:fetch).with("TMDB_ACCESS_TOKEN", "").and_return("")
+      svc = described_class.new
+      expect(svc.trending_movies).to include(:error)
+    end
+
+    it "returns cached on connection failure" do
+      Rails.cache.write("tmdb_trending_week_page_1", { cached: true })
+      allow(service).to receive(:authorized_get).and_raise(Faraday::ConnectionFailed.new("nope"))
+      expect(service.trending_movies).to eq({ cached: true })
+    end
+
+    it "returns api failure when response not success" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.trending_movies[:error]).to include("Unable to fetch")
+    end
+
+    it "returns rate limit error when no cache" do
+      allow(service).to receive(:authorized_get).and_return(instance_double(Faraday::Response, success?: false, status: 429, body: {}))
+      expect(service.trending_movies[:error]).to match(/Rate limit/)
+    end
+  end
+
+  describe "#top_rated_movies" do
+    it "returns cached data when rate limited" do
+      Rails.cache.write("tmdb_top_rated_page_1", { cached: true })
+      allow(service).to receive(:authorized_get).and_return(rate_limited_response)
+
+      expect(service.top_rated_movies(page: 1)).to eq({ cached: true })
+    end
+
+    it "fetches and caches on success" do
+      allow(service).to receive(:authorized_get).and_return(success_response)
+
+      expect(service.top_rated_movies(page: 2)).to eq(success_response.body)
+      expect(Rails.cache.read("tmdb_top_rated_page_2")).to eq(success_response.body)
+    end
+
+    it "returns fallback on failure" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.top_rated_movies(page: 1)).to include(:error)
+    end
+
+    it "returns rate limit fallback with no cache" do
+      allow(service).to receive(:authorized_get).and_return(instance_double(Faraday::Response, success?: false, status: 429, body: {}))
+      expect(service.top_rated_movies(page: 1)[:error]).to match(/Rate limit/)
+    end
+
+    it "returns cached on connection failure" do
+      Rails.cache.write("tmdb_top_rated_page_1", { cached: true })
+      allow(service).to receive(:authorized_get).and_raise(Faraday::ConnectionFailed.new("fail"))
+      expect(service.top_rated_movies(page: 1)).to eq({ cached: true })
+    end
+
+    it "handles generic error returning cached or fallback" do
+      allow(service).to receive(:authorized_get).and_raise(StandardError.new("boom"))
+      expect(service.top_rated_movies(page: 1)).to include(:error)
+    end
+  end
+
+  describe "#genres" do
+    it "returns cached genres when present" do
+      Rails.cache.write("tmdb_genres", { "genres" => [ { "id" => 1 } ] })
+
+      expect(service.genres).to eq("genres" => [ { "id" => 1 } ])
+    end
+
+    it "normalizes and caches genres on success" do
+      allow(service).to receive(:authorized_get).and_return(instance_double(Faraday::Response, success?: true, status: 200, body: { "genres" => [ { "id" => 2 } ] }))
+
+      expect(service.genres).to eq("genres" => [ { "id" => 2 } ])
+      expect(Rails.cache.read("tmdb_genres")).to eq("genres" => [ { "id" => 2 } ])
+    end
+
+    it "returns empty on failure" do
+      allow(service).to receive(:authorized_get).and_return(failure_response)
+      expect(service.genres).to eq("genres" => [])
+    end
+
+    it "rescues exceptions and returns empty" do
+      allow(service).to receive(:authorized_get).and_raise(StandardError.new("boom"))
+      expect(service.genres).to eq("genres" => [])
+    end
+  end
+
+  describe ".poster_url" do
+    it "returns nil for blank path" do
+      expect(described_class.poster_url(nil)).to be_nil
+    end
+
+    it "builds the full URL when present" do
+      expect(described_class.poster_url("/abc.jpg")).to eq("#{TmdbService::IMAGE_BASE_URL}/abc.jpg")
+    end
+  end
+
+  describe "#authorized_get" do
+    it "raises when access token missing" do
+      allow(ENV).to receive(:fetch).with("TMDB_ACCESS_TOKEN", "").and_return("")
+      svc = described_class.new
+      expect { svc.send(:authorized_get, "movie/top_rated") }.to raise_error("TMDB_ACCESS_TOKEN is not configured")
+    end
+
+    it "sets headers and params on request" do
+      req_double = double("req", headers: {}, params: {})
+      conn_double = double("conn")
+      allow(conn_double).to receive(:build_url).with("movie/top_rated").and_return(double(to_s: "http://example.com"))
+      expect(conn_double).to receive(:get).with("movie/top_rated").and_yield(req_double).and_return(success_response)
+      allow(Faraday).to receive(:new).and_return(conn_double)
+
+      svc = described_class.new
+      svc.send(:authorized_get, "movie/top_rated", params: { page: 2 }, log_context: "page=2")
+
+      expect(req_double.headers["Authorization"]).to start_with("Bearer ")
+      expect(req_double.params[:page]).to eq(2)
     end
   end
 end

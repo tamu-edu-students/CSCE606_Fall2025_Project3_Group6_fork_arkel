@@ -60,7 +60,7 @@ RSpec.describe "Reviews", type: :request do
       review = create(:review, user: user, movie: movie, body: "A valid review body.", rating: 7)
 
       patch movie_review_path(movie, review), params: { review: { body: "short", rating: 0 } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "prevents non-owner from editing" do

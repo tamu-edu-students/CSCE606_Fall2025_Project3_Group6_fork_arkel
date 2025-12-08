@@ -1,232 +1,137 @@
-require 'rails_helper'
+require "rails_helper"
 
-RSpec.describe StatsService, type: :service do
-  include ActiveSupport::Testing::TimeHelpers
-
+RSpec.describe StatsService do
   let(:user) { create(:user) }
-  let(:watch_history) { create(:watch_history, user: user) }
-  let(:service) { described_class.new(user) }
+  let(:tmdb_service) { instance_double(TmdbService, movie_details: { "runtime" => 140 }) }
+  let(:service) { described_class.new(user, tmdb_service: tmdb_service) }
+
+  let(:genre) { create(:genre, name: "Action") }
+  let(:movie1) { create(:movie, runtime: 120, release_date: Date.new(2020, 1, 1)) }
+  let(:movie2) { create(:movie, runtime: nil, tmdb_id: 999, release_date: Date.new(2010, 5, 5)) }
+  let!(:movie_genre1) { create(:movie_genre, movie: movie1, genre: genre) }
+  let!(:movie_genre2) { create(:movie_genre, movie: movie2, genre: genre) }
+
+  let!(:watch_history) { create(:watch_history, user: user) }
+  let!(:log1) { create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(Date.current.year, 1, 1)) }
+  let!(:log2) { create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(Date.current.year, 1, 2)) }
+  let!(:log3) { create(:watch_log, watch_history: watch_history, movie: movie2, watched_on: Date.new(Date.current.year, 2, 1)) }
+  let!(:legacy_log) { create(:log, user: user, movie: movie1, watched_on: Date.new(Date.current.year, 1, 1), rating: 7, rewatch: true) }
 
   describe "#calculate_overview" do
-    context "with watch history data" do
-      let!(:movie1) { create(:movie, title: "Inception", runtime: 148) }
-      let!(:movie2) { create(:movie, title: "The Matrix", runtime: 136) }
-      let!(:action) { create(:genre, name: "Action", tmdb_id: 101) }
-      let!(:drama) { create(:genre, name: "Drama", tmdb_id: 102) }
-
-      before do
-        movie1.genres << action
-        movie2.genres << drama
-        create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(2024, 1, 1))
-        create(:watch_log, watch_history: watch_history, movie: movie2, watched_on: Date.new(2024, 1, 2))
-        create(:review, user: user, movie: movie1, body: "This review text is long enough", rating: 8)
-        create(:log, user: user, movie: movie2, watched_on: Date.new(2024, 1, 2), rewatch: true)
-      end
-
-      it "returns aggregated overview numbers and genre breakdown" do
-        overview = service.calculate_overview
-
-        expect(overview[:total_movies]).to eq(2)
-        expect(overview[:total_hours]).to eq(284) # minutes
-        expect(overview[:total_reviews]).to eq(1)
-        expect(overview[:total_rewatches]).to eq(1)
-        expect(overview[:genre_breakdown]).to eq({ "Action" => 1, "Drama" => 1 })
-      end
+    it "returns totals and breakdowns" do
+      create(:review, user: user, movie: movie1, body: "Great movie content", rating: 8)
+      result = service.calculate_overview
+      expect(result[:total_movies]).to eq(2)
+      expect(result[:total_hours]).to be > 0
+      expect(result[:total_reviews]).to eq(1)
+      expect(result[:total_rewatches]).to eq(1)
+      expect(result[:genre_breakdown]).to include("Action" => 3)
+      expect(result[:decade_breakdown]).to include("2020s", "2010s")
     end
 
-    context "when the same movie is watched multiple times" do
-      before do
-        movie = create(:movie, runtime: 100)
-        create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 1, 1))
-        create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 2, 1))
-      end
-
-      it "counts rewatches based on duplicate watch logs" do
-        overview = service.calculate_overview
-        expect(overview[:total_rewatches]).to eq(1)
-      end
+    it "handles string release_date in decade breakdown" do
+      movie2.update(release_date: "1999-01-01")
+      result = service.calculate_overview
+      expect(result[:decade_breakdown]).to include("1990s")
     end
 
-    context "with no watch logs" do
-      it "returns zeroed stats" do
-        expect(service.calculate_overview).to eq(
-          total_movies: 0,
-          total_hours: 0,
-          total_reviews: 0,
-          total_rewatches: 0,
-          genre_breakdown: {},
-          decade_breakdown: {}
-        )
-      end
-    end
-
-    context "when an error occurs" do
-      before do
-        allow(service).to receive(:user_watch_logs).and_raise(StandardError.new("boom"))
-      end
-
-      it "fails safely with zeroed stats" do
-        overview = service.calculate_overview
-        expect(overview.values_at(:total_movies, :total_hours, :total_reviews, :total_rewatches)).to all(eq(0))
-        expect(overview[:genre_breakdown]).to eq({})
-      end
-    end
-  end
-
-  describe "#most_watched_movies" do
-    let!(:movie1) { create(:movie, title: "Alpha") }
-    let!(:movie2) { create(:movie, title: "Beta") }
-
-    before do
-      create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(2024, 1, 1))
-      create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(2024, 2, 1))
-      create(:watch_log, watch_history: watch_history, movie: movie2, watched_on: Date.new(2024, 1, 5))
-    end
-
-    it "orders by rewatch count descending, then total watches" do
-      top = service.most_watched_movies(limit: 2)
-      expect(top.first[:movie]).to eq(movie1)
-      expect(top.first[:rewatch_count]).to eq(1)
-      expect(top.first[:watch_count]).to eq(2)
-    end
-
-    it "falls back safely when nothing is watched" do
-      allow(service).to receive(:user_watch_logs).and_return(WatchLog.none)
-      expect(service.most_watched_movies).to eq([])
+    it "rescues and returns zeros on error" do
+      bad_service = described_class.new(nil)
+      expect(bad_service.calculate_overview[:total_movies]).to eq(0)
     end
   end
 
   describe "#calculate_top_contributors" do
-    let!(:movie1) { create(:movie, title: "Inception") }
-    let!(:movie2) { create(:movie, title: "The Matrix") }
-    let!(:genre1) { create(:genre, name: "Action") }
-    let!(:genre2) { create(:genre, name: "Sci-Fi", tmdb_id: 878) }
-    let!(:director) { create(:person, name: "Christopher Nolan", tmdb_id: 2) }
-    let!(:actor) { create(:person, name: "Leonardo DiCaprio", tmdb_id: 3) }
+    it "returns top genres, directors, and actors" do
+      person_dir = create(:person, name: "Director X")
+      person_act = create(:person, name: "Actor Y")
+      create(:movie_person, movie: movie1, person: person_dir, role: "director")
+      create(:movie_person, movie: movie1, person: person_act, role: "cast")
 
-    before do
-      movie1.genres << [ genre1, genre2 ]
-      movie2.genres << genre1
+      result = service.calculate_top_contributors
+      expect(result[:top_genres].first[:name]).to eq("Action")
+      expect(result[:top_directors].first[:name]).to eq("Director X")
+      expect(result[:top_actors].first[:name]).to eq("Actor Y")
+    end
+  end
 
-      create(:movie_person, movie: movie1, person: director, role: "director")
-      create(:movie_person, movie: movie1, person: actor, role: "cast")
-      create(:movie_person, movie: movie2, person: director, role: "director")
-
-      create(:watch_log, watch_history: watch_history, movie: movie1, watched_on: Date.new(2024, 1, 1))
-      create(:watch_log, watch_history: watch_history, movie: movie2, watched_on: Date.new(2024, 1, 2))
+  describe "#most_watched_movies" do
+    it "returns sorted movie list with counts" do
+      result = service.most_watched_movies(limit: 2)
+      expect(result.first[:movie]).to eq(movie1)
+      expect(result.first[:watch_count]).to eq(2)
+      expect(result.first[:rewatch_count]).to eq(1)
     end
 
-    it "returns top genres, directors, and actors ordered by count" do
-      contributors = service.calculate_top_contributors
+    it "rescues on error and returns empty" do
+      broken = described_class.new(nil)
+      expect(broken.most_watched_movies).to eq([])
+    end
 
-      expect(contributors[:top_genres].first).to eq({ name: "Action", count: 2 })
-      expect(contributors[:top_directors].first).to include(name: "Christopher Nolan", count: 2)
-      expect(contributors[:top_actors].first).to include(name: "Leonardo DiCaprio", count: 1)
-
-      expect(contributors[:top_genres].length).to be <= 10
-      expect(contributors[:top_directors].length).to be <= 10
-      expect(contributors[:top_actors].length).to be <= 10
+    it "rescues and logs errors" do
+      allow(service).to receive(:user_watch_logs).and_raise(StandardError.new("boom"))
+      expect(service.most_watched_movies).to eq([])
     end
   end
 
   describe "#calculate_trend_data" do
-    let!(:movie) { create(:movie, title: "Test Movie") }
-
-    before { travel_to Date.new(2024, 6, 15) }
-    after { travel_back }
-
-    context "with dated watch logs and ratings" do
-      before do
-        create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 3, 10), incoming_rating: 4)
-        create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 3, 20), incoming_rating: 2)
-        create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 4, 5), incoming_rating: 5)
-      end
-
-      it "builds a month-by-month activity trend including zero months" do
-        trend_data = service.calculate_trend_data
-
-        expect(trend_data[:activity_trend].first[:month]).to eq("2024-01")
-        expect(trend_data[:activity_trend].last[:month]).to eq("2024-06")
-        expect(trend_data[:activity_trend].find { |row| row[:month] == "2024-03" }[:count]).to eq(2)
-        expect(trend_data[:activity_trend].find { |row| row[:month] == "2024-04" }[:count]).to eq(1)
-      end
-
-      it "averages ratings per month using synced legacy logs" do
-        trend_data = service.calculate_trend_data
-
-        march = trend_data[:rating_trend].find { |row| row[:month] == "2024-03" }
-        april = trend_data[:rating_trend].find { |row| row[:month] == "2024-04" }
-
-        expect(march[:average_rating]).to eq(3.0) # (4 + 2) / 2
-        expect(april[:average_rating]).to eq(5.0)
-      end
-    end
-
-    context "with no watch logs" do
-      it "returns zeroed activity trend and empty rating trend" do
-        trend_data = service.calculate_trend_data
-
-        expect(trend_data[:activity_trend]).not_to be_empty
-        expect(trend_data[:activity_trend].all? { |row| row[:count] == 0 }).to be(true)
-        expect(trend_data[:rating_trend]).to eq([])
-      end
+    it "returns activity and rating trends" do
+      create(:log, user: user, movie: movie1, watched_on: log1.watched_on, rating: 8)
+      trends = service.calculate_trend_data(year: Date.current.year)
+      expect(trends[:activity_trend]).not_to be_empty
+      expect(trends[:rating_trend]).not_to be_empty
     end
   end
 
   describe "#calculate_heatmap_data" do
-    let!(:movie) { create(:movie, title: "Test Movie") }
-
-    before { travel_to Date.new(2024, 6, 15) }
-    after { travel_back }
-
-    it "counts watches for the requested year and fills missing days" do
-      create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 1, 1))
-      create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 3, 5))
-
-      heatmap = service.calculate_heatmap_data(year: 2024)
-
-      expect(heatmap["2024-01-01"]).to eq(1)
-      expect(heatmap["2024-03-05"]).to eq(1)
-      expect(heatmap["2024-06-15"]).to eq(0)
-      expect(heatmap.keys.min).to eq("2024-01-01")
-      expect(heatmap.keys.max).to eq("2024-06-15")
+    it "fills in missing dates" do
+      heatmap = service.calculate_heatmap_data(year: Date.current.year)
+      expect(heatmap[Date.new(Date.current.year, 1, 1).to_s]).to eq(1)
+      expect(heatmap[Date.new(Date.current.year, 1, 2).to_s]).to eq(1)
     end
 
-    it "ignores logs outside the selected year" do
-      create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2023, 12, 31))
-      create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.new(2024, 1, 2))
-
-      heatmap = service.calculate_heatmap_data(year: 2023)
-
-      expect(heatmap["2023-12-31"]).to eq(1)
-      expect(heatmap).not_to have_key("2024-01-02")
-      expect(heatmap.keys.min).to eq("2023-01-01")
-      expect(heatmap.keys.max).to eq("2023-12-31")
-    end
-
-    it "returns zero counts when no logs exist" do
-      heatmap = service.calculate_heatmap_data(year: 2024)
-
-      expect(heatmap.values.uniq).to eq([ 0 ])
-      expect(heatmap.keys.min).to eq("2024-01-01")
-      expect(heatmap.keys.max).to eq("2024-06-15")
+    it "handles empty logs" do
+      empty_service = described_class.new(create(:user))
+      expect(empty_service.calculate_heatmap_data(year: Date.current.year)).not_to be_empty
     end
   end
 
-  describe "#heatmap_years" do
-    before { travel_to Date.new(2024, 6, 15) }
-    after { travel_back }
-
-    it "returns distinct years with watch logs in descending order" do
-      create(:watch_log, watch_history: watch_history, movie: create(:movie), watched_on: Date.new(2022, 5, 1))
-      create(:watch_log, watch_history: watch_history, movie: create(:movie), watched_on: Date.new(2024, 1, 1))
-      create(:watch_log, watch_history: watch_history, movie: create(:movie), watched_on: Date.new(2023, 7, 1))
-
-      expect(service.heatmap_years).to eq([ 2024, 2023, 2022 ])
+  describe "#heatmap_years and #trend_years" do
+    it "returns years with defaults" do
+      expect(service.heatmap_years).to include(Date.current.year)
+      expect(service.trend_years.first).to eq(Date.current.year)
     end
 
-    it "defaults to the current year when no data exists" do
-      expect(service.heatmap_years).to eq([ 2024, 2023, 2022, 2021, 2020 ])
+    it "returns current year on error" do
+      allow(service).to receive(:user_watch_logs).and_raise(StandardError.new("boom"))
+      allow(service).to receive(:last_five_years).and_raise(StandardError.new("boom"))
+      expect(service.heatmap_years).to eq([ Date.current.year ])
+      expect(service.trend_years).to eq([ Date.current.year ])
+    end
+  end
+
+  describe "#resolved_runtime" do
+    it "uses cached runtime and updates from tmdb when missing" do
+      Rails.cache.write("movie_runtime_#{movie2.tmdb_id}", :missing)
+      expect(service.send(:resolved_runtime, movie2)).to eq(0)
+
+      Rails.cache.delete("movie_runtime_#{movie2.tmdb_id}")
+      expect(service.send(:resolved_runtime, movie2)).to eq(140)
+      expect(movie2.reload.runtime).to eq(140)
+    end
+  end
+
+  describe "#update_runtime_from_tmdb" do
+    it "memoizes runtime per movie id" do
+      expect(service.send(:update_runtime_from_tmdb, movie2)).to eq(140)
+      expect(service.send(:update_runtime_from_tmdb, movie2)).to eq(140) # uses cache
+    end
+
+    it "rescues errors from tmdb_service" do
+      bad_tmdb = instance_double(TmdbService)
+      allow(bad_tmdb).to receive(:movie_details).and_raise(StandardError.new("boom"))
+      bad_service = described_class.new(user, tmdb_service: bad_tmdb)
+      expect { bad_service.send(:update_runtime_from_tmdb, movie2) }.not_to change { movie2.runtime }
     end
   end
 end

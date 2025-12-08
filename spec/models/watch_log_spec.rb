@@ -32,4 +32,58 @@ RSpec.describe WatchLog, type: :model do
     log.valid?
     expect(log.user_id).to eq(hist.user_id)
   end
+
+  describe "callbacks" do
+    let(:user) { create(:user) }
+    let(:movie) { create(:movie, release_date: Date.new(2020, 1, 1), runtime: 120) }
+    let(:history) { create(:watch_history, user: user) }
+
+    it "skips sync when rating cannot be resolved" do
+      log = build(:watch_log, watch_history: history, movie: movie, watched_on: Date.current)
+      log.incoming_rating = nil
+      allow(Review).to receive(:where).and_return(Review.none)
+
+      expect { log.save! }.not_to change(Log, :count)
+    end
+
+    it "syncs to Log with incoming_rating" do
+      log = build(:watch_log, watch_history: history, movie: movie, watched_on: Date.current)
+      log.incoming_rating = 7
+
+      expect { log.save! }.to change(Log, :count).by(1)
+      synced = Log.last
+      expect(synced.rating).to eq(7)
+      expect(synced.rewatch).to eq(false)
+    end
+
+    it "detects rewatch when prior log exists" do
+      create(:log, user: user, movie: movie, watched_on: Date.yesterday, rating: 8, rewatch: true)
+      log = build(:watch_log, watch_history: history, movie: movie, watched_on: Date.current, incoming_rating: 9)
+
+      log.save!
+      synced = Log.find_by(user: user, movie: movie, watched_on: Date.current)
+      expect(synced.rewatch).to eq(true)
+    end
+
+    it "removes synced log on destroy" do
+      log = create(:watch_log, watch_history: history, movie: movie, watched_on: Date.current, incoming_rating: 6)
+      expect(Log.where(user: user, movie: movie, watched_on: log.watched_on)).to exist
+
+      expect { log.destroy }.to change { Log.where(user: user, movie: movie, watched_on: log.watched_on).count }.from(1).to(0)
+    end
+
+    it "rescues errors when syncing to log" do
+      bad_log = build(:watch_log, watch_history: history, movie: movie, watched_on: Date.current, incoming_rating: 7)
+      allow(Log).to receive(:find_or_initialize_by).and_raise(StandardError.new("boom"))
+
+      expect { bad_log.save }.not_to raise_error
+    end
+
+    it "rescues errors when removing synced log" do
+      log = create(:watch_log, watch_history: history, movie: movie, watched_on: Date.current, incoming_rating: 6)
+      allow(Log).to receive(:find_by).and_raise(StandardError.new("boom"))
+
+      expect { log.destroy }.not_to raise_error
+    end
+  end
 end

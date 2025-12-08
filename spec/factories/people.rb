@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :person do
-    tmdb_id { 1 }
-    name { "MyString" }
+    sequence(:tmdb_id) { |n| n }
+    sequence(:name) { |n| "Person #{n}" }
     profile_path { "MyString" }
   end
 end

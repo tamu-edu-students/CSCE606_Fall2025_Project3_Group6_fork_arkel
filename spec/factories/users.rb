@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :user do
-    email { Faker::Internet.email }
-    username { "user_#{Faker::Number.number(digits: 5)}" }
+    sequence(:email) { |n| "user#{n}@example.com" }
+    sequence(:username) { |n| "user_#{n}" }
     password { "Password123!" }
     password_confirmation { "Password123!" }
     confirmed_at { Time.current }

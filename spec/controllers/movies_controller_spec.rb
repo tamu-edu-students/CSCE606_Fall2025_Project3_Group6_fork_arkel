@@ -32,6 +32,34 @@ RSpec.describe MoviesController, type: :controller do
       end
     end
 
+    context "for discovery with signed in user" do
+      let(:user_watch_history) { create(:watch_history, user: user) }
+      let!(:watch_log) { create(:watch_log, watch_history: user_watch_history, movie: create(:movie, tmdb_id: 999, title: "Logged"), watched_on: Date.current) }
+
+      before do
+        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:current_user).and_return(user)
+        allow(tmdb_service).to receive(:trending_movies).and_return({ "results" => [ { "id" => 1, "title" => "Trend" } ] })
+        allow(tmdb_service).to receive(:top_rated_movies).and_return({ "results" => [ { "id" => 2, "title" => "Top", "vote_average" => 8.0 } ] })
+        allow(tmdb_service).to receive(:similar_movies).and_return({ "results" => [ { "id" => 3, "title" => "Similar", "popularity" => 5 } ] })
+        allow(tmdb_service).to receive(:genres).and_return({ "genres" => [] })
+      end
+
+      it "builds recommendations and trending/top rated lists" do
+        get :index
+        expect(assigns(:has_watch_logs)).to be true
+        expect(assigns(:recommendations)).to be_present
+        expect(assigns(:trending_movies)).to be_present
+        expect(assigns(:high_rated_unwatched)).to be_present
+      end
+
+      it "captures recommendation errors" do
+        allow(tmdb_service).to receive(:similar_movies).and_return({ "error" => "fail" })
+        allow(tmdb_service).to receive(:genres).and_return({ "genres" => [] })
+        get :index
+        expect(assigns(:recommendations_error)).to eq("fail")
+      end
+    end
     context "with valid query" do
       let(:search_results) do
         {
@@ -72,9 +100,43 @@ RSpec.describe MoviesController, type: :controller do
         expect(assigns(:total_results)).to eq(1)
       end
 
+      it "handles error response" do
+        allow(tmdb_service).to receive(:search_movies).and_return({ "error" => "fail" })
+        get :index, params: { query: "Inception" }
+        expect(assigns(:movies)).to eq([])
+        expect(assigns(:error)).to eq("fail")
+      end
+
       it "loads genres for filter" do
         get :index, params: { query: "Inception" }
         expect(assigns(:genres)).to be_present
+      end
+
+      context "with pagination across pages" do
+        let(:second_page_results) do
+          {
+            "results" => Array.new(10) { |i| { "id" => i + 100, "title" => "Movie #{i}", "popularity" => 1 } },
+            "total_pages" => 2,
+            "total_results" => 20
+          }
+        end
+
+        before do
+          allow(tmdb_service).to receive(:search_movies).with("Inception", page: 2).and_return(second_page_results)
+          allow(tmdb_service).to receive(:search_movies).with("Inception", page: 1).and_return(second_page_results)
+        end
+
+        it "fetches subsequent pages to build filtered results" do
+          get :index, params: { query: "Inception", page: 2 }
+          expect(assigns(:movies).length).to eq(10)
+          expect(assigns(:total_pages)).to be >= 2
+        end
+
+        it "honors unknown sort_by using default branch" do
+          allow(tmdb_service).to receive(:search_movies).and_return(second_page_results.merge("results" => [ { "id" => 1, "title" => "A" }, { "id" => 2, "title" => "B" } ]))
+          get :index, params: { query: "Inception", sort_by: "unknown" }
+          expect(assigns(:movies).map { |m| m["title"] }.first(2)).to eq([ "A", "B" ])
+        end
       end
 
       context "with genre filter" do
@@ -143,6 +205,35 @@ RSpec.describe MoviesController, type: :controller do
           expect(assigns(:movies)).to eq([])
         end
       end
+
+      context "when sorting release date handles invalid dates" do
+        before do
+          search_results["results"] << { "id" => 3, "title" => "Broken", "release_date" => "bad-date" }
+        end
+
+        it "falls back to default date" do
+          get :index, params: { query: "Inception", sort_by: "release_date" }
+          movies = assigns(:movies)
+          expect(movies.last["title"]).to eq("Broken")
+        end
+
+        it "handles nil release dates" do
+          search_results["results"] << { "id" => 4, "title" => "NilDate", "release_date" => nil }
+          get :index, params: { query: "Inception", sort_by: "release_date" }
+          expect(assigns(:movies).map { |m| m["title"] }).to include("NilDate")
+        end
+      end
+
+      context "with decade filter and invalid dates" do
+        before do
+          search_results["results"] << { "id" => 4, "title" => "BadDate", "release_date" => "bad" }
+        end
+
+        it "skips movies with invalid release date" do
+          get :index, params: { query: "Inception", decade: 2010 }
+          expect(assigns(:movies).map { |m| m["title"] }).not_to include("BadDate")
+        end
+      end
     end
   end
 
@@ -194,6 +285,13 @@ RSpec.describe MoviesController, type: :controller do
         expect(tmdb_service).not_to receive(:movie_details)
         get :show, params: { id: tmdb_id }
       end
+
+      it "refreshes skeletal movie data" do
+        movie.update(runtime: nil)
+        allow(tmdb_service).to receive(:movie_details).and_return(movie_data)
+        get :show, params: { id: tmdb_id }
+        expect(assigns(:movie).runtime).to eq(148)
+      end
     end
 
     context "without cached movie" do
@@ -212,6 +310,13 @@ RSpec.describe MoviesController, type: :controller do
         get :show, params: { id: tmdb_id }
         expect(assigns(:similar_movies)).to be_present
         expect(assigns(:similar_movies).length).to eq(2)
+      end
+
+      it "refreshes details when skeletal" do
+        skeletal = create(:movie, tmdb_id: tmdb_id, runtime: nil)
+        allow(tmdb_service).to receive(:movie_details).and_return(movie_data)
+        get :show, params: { id: tmdb_id }
+        expect(assigns(:movie).runtime).to eq(148)
       end
     end
 
@@ -236,6 +341,12 @@ RSpec.describe MoviesController, type: :controller do
           "results" => []
         })
       end
+
+      it "assigns error hash" do
+        allow(tmdb_service).to receive(:movie_details).and_return(movie_data)
+        get :show, params: { id: tmdb_id }
+        expect(assigns(:similar_movies)).to include("error")
+      end
     end
   end
 
@@ -243,7 +354,7 @@ RSpec.describe MoviesController, type: :controller do
     context "with empty query" do
       it "returns error message" do
         get :search, params: { query: "" }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to include("Please enter")
       end
@@ -267,6 +378,12 @@ RSpec.describe MoviesController, type: :controller do
         expect(response).to have_http_status(:success)
         json_response = JSON.parse(response.body)
         expect(json_response["results"]).to be_present
+      end
+
+      it "returns API response directly" do
+        get :search, params: { query: "Test", page: 2 }
+        json_response = JSON.parse(response.body)
+        expect(json_response["total_pages"]).to eq(1)
       end
     end
   end

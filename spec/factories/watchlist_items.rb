@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :watchlist_item do
-    watchlist { nil }
-    movie { nil }
+    association :watchlist
+    association :movie
   end
 end

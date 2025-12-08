@@ -1,16 +1,34 @@
-require 'rails_helper'
+require "rails_helper"
 
-# Specs in this file have access to a helper object that includes
-# the HomeHelper. For example:
-#
-# describe HomeHelper do
-#   describe "string concat" do
-#     it "concats two strings with spaces" do
-#       expect(helper.concat_strings("this","that")).to eq("this that")
-#     end
-#   end
-# end
 RSpec.describe HomeHelper, type: :helper do
-  # HomeHelper is currently empty, so no tests needed
-  # If helper methods are added in the future, add tests here
+  describe "#watch_label" do
+    let(:user) { create(:user) }
+    let(:movie) { create(:movie) }
+
+    it "returns 'Watched' for non watch log activities" do
+      review = create(:review, user: user, movie: movie, body: "Solid movie!", rating: 7)
+      expect(helper.watch_label(review)).to eq("Watched")
+    end
+
+    it "returns 'Watched' for first watch log" do
+      watch_history = create(:watch_history, user: user)
+      first_log = create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.today)
+
+      expect(helper.watch_label(first_log)).to eq("Watched")
+    end
+
+    it "returns 'Rewatched' when a prior watch exists" do
+      watch_history = create(:watch_history, user: user)
+      create(:watch_log, watch_history: watch_history, movie: movie, watched_on: 2.days.ago)
+      second_log = create(:watch_log, watch_history: watch_history, movie: movie, watched_on: Date.today)
+
+      expect(helper.watch_label(second_log)).to eq("Rewatched")
+    end
+
+    it "rescues errors and returns falsey rewatch" do
+      bad_activity = double(movie_id: 1, user_id: 1, watched_on: Date.today)
+      allow(WatchLog).to receive(:where).and_raise(StandardError.new("boom"))
+      expect(helper.watch_label(bad_activity)).to eq("Watched")
+    end
+  end
 end
