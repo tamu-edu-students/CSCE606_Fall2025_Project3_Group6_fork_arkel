@@ -87,6 +87,7 @@ jobs:
       RAILS_ENV: test
       DATABASE_URL: "postgres://cinematico:cinematico@localhost:5432/cinematico_test"
       REDIS_URL: "redis://localhost:6379/2"
+      TMDB_ACCESS_TOKEN: "dummy_test_token"
 
     steps:
       - name: Checkout code
