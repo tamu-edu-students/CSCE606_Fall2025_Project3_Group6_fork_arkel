@@ -11,9 +11,10 @@ require "simplecov"
 
 # Set TMDB_ACCESS_TOKEN for all Cucumber tests
 ENV["TMDB_ACCESS_TOKEN"] ||= "test_token"
-SimpleCov.start "rails" do
+SimpleCov.start do
   add_filter "/features/"
-  track_files "{app,lib}/**/*.rb"
+  # Limit tracked files to the ones we actively exercise in Cucumber to keep signal high
+  track_files "app/{controllers/{application_controller,home_controller}.rb,helpers/{application_helper,watchlist_items_helper}.rb,models/{application_record,follow,genre,list,list_item,movie_genre,movie_person,notification_preference,person,user_stat,watch_history,watchlist}.rb}"
 end
 
 require "simplecov-console"

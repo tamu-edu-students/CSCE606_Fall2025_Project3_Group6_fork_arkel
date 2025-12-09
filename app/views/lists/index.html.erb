@@ -1,0 +1,14 @@
+<div class="min-h-screen pt-24 px-6 bg-cinematico-black">
+  <div class="max-w-3xl mx-auto bg-cinematico-dark p-6 rounded border border-gray-800">
+    <h1 class="font-cinzel text-3xl text-cinematico-gold mb-6">Your Lists</h1>
+    <% if @lists.present? %>
+      <ul class="space-y-2">
+        <% @lists.each do |list| %>
+          <li class="text-cinematico-light"><%= list.name %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-cinematico-light">No lists yet.</p>
+    <% end %>
+  </div>
+</div>

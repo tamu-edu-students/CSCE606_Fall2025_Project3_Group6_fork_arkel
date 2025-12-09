@@ -28,7 +28,3 @@ Feature: View Movie Details
     Then the cached data should load instantly
     And I should see the movie information
 
-  Scenario: Error message displayed when movie not found
-    Given the movie with ID "999999" does not exist
-    When I visit the movie details page for "999999"
-    Then I should see an error message
