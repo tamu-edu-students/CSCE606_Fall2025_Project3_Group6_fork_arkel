@@ -42,27 +42,27 @@ class NotificationCreator
     attrs = {}
 
     # Only set attributes that exist in the schema
-    attrs[:notification_type] = notification_type if Notification.column_names.include?("notification_type")
-    attrs[:body] = body if Notification.column_names.include?("body") && body.present?
+    attrs[:notification_type] = notification_type if Notification.safe_has_column?("notification_type")
+    attrs[:body] = body if Notification.safe_has_column?("body") && body.present?
 
     # Use the correct foreign key column name based on schema
-    if Notification.column_names.include?("recipient_id")
+    if Notification.safe_has_column?("recipient_id")
       attrs[:recipient_id] = recipient.id
-    else
+    elsif Notification.safe_has_column?("user_id")
       attrs[:user_id] = recipient.id
     end
 
     # Set actor if schema supports it
-    attrs[:actor_id] = actor.id if actor.present? && Notification.column_names.include?("actor_id")
+    attrs[:actor_id] = actor.id if actor.present? && Notification.safe_has_column?("actor_id")
 
     # Set notifiable if schema supports it
     if notifiable.present?
-      attrs[:notifiable_type] = notifiable.class.name if Notification.column_names.include?("notifiable_type")
-      attrs[:notifiable_id] = notifiable.id if Notification.column_names.include?("notifiable_id")
+      attrs[:notifiable_type] = notifiable.class.name if Notification.safe_has_column?("notifiable_type")
+      attrs[:notifiable_id] = notifiable.id if Notification.safe_has_column?("notifiable_id")
     end
 
     # Set data if schema supports it
-    attrs[:data] = data if Notification.column_names.include?("data") && data.present?
+    attrs[:data] = data if Notification.safe_has_column?("data") && data.present?
 
     attrs
   end

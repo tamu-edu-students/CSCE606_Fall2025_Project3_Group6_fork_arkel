@@ -37,9 +37,9 @@ class NotificationsController < ApplicationController
   def mark_all_read
     relation = current_user.notifications
 
-    if Notification.column_names.include?("read_at")
+    if Notification.safe_has_column?("read_at")
       relation.unread.update_all(read_at: Time.current)
-    elsif Notification.column_names.include?("read")
+    elsif Notification.safe_has_column?("read")
       relation.unread.update_all(read: true)
     end
 

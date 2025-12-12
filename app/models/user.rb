@@ -25,7 +25,7 @@ class User < ApplicationRecord
 
   # Notifications
   # The notifications table historically used `user_id` as the recipient column.
-  has_many :notifications, foreign_key: (Notification.column_names.include?("recipient_id") ? :recipient_id : :user_id), dependent: :destroy
+  has_many :notifications, foreign_key: (Notification.safe_has_column?("recipient_id") ? :recipient_id : :user_id), dependent: :destroy
   has_one :notification_preference, dependent: :destroy
 
   # Stats
