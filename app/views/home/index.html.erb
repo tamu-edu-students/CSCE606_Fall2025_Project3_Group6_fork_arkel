@@ -113,7 +113,7 @@
           <div class="feed-card p-5">
             <div class="flex items-center justify-between mb-4">
               <h2 class="font-cinzel text-xl text-white">Trending Now</h2>
-              <span class="text-xs text-gray-500">Popular this week</span>
+              <span class="text-xs text-gray-500">Popular this week (<%= @trending_movies.size %>)</span>
             </div>
             <div class="space-y-4">
               <% @trending_movies.each do |movie| %>
@@ -179,6 +179,9 @@
           <%= link_to "View all", movies_path, class: "text-sm text-cinematico-gold hover:text-white transition" %>
         </div>
 
+        <% if @trending_movies %>
+            <span class="text-xs text-gray-500">Popular this week (<%= @trending_movies.size %>)</span>
+        <% end %>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           <% if @trending_movies %>
               <% @trending_movies.each do |movie| %>
